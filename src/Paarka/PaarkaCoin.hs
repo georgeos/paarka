@@ -12,6 +12,7 @@
 
 module Paarka.PaarkaCoin where
 
+import           Paarka.AccessToken
 import           Control.Monad          hiding (fmap)
 import           Data.Text              (Text)
 import           Data.Void              (Void)
@@ -31,9 +32,9 @@ import           Wallet.Emulator.Wallet
 
 -- | Minting policy
 
-{-# INLINABLE mintPolicy #-}
-mintPolicy :: PubKeyHash -> () -> ScriptContext -> Bool
-mintPolicy pkh _ ctx =  traceIfFalse "Wrong token minted" checkMintedCoin
+{-# INLINABLE paarkaMintPolicy #-}
+paarkaMintPolicy :: PubKeyHash -> () -> ScriptContext -> Bool
+paarkaMintPolicy pkh _ ctx =  traceIfFalse "Wrong token minted" checkMintedCoin
                     &&  traceIfFalse "Not signed by Paarka" checkSignature
   where
     info :: TxInfo
@@ -50,17 +51,17 @@ mintPolicy pkh _ ctx =  traceIfFalse "Wrong token minted" checkMintedCoin
 
 paarkaPolicy :: PubKeyHash -> Scripts.MintingPolicy
 paarkaPolicy pkh = mkMintingPolicyScript $
-    $$(PlutusTx.compile [|| Scripts.wrapMintingPolicy . mintPolicy ||]) `PlutusTx.applyCode` PlutusTx.liftCode pkh
+    $$(PlutusTx.compile [|| Scripts.wrapMintingPolicy . paarkaMintPolicy ||]) `PlutusTx.applyCode` PlutusTx.liftCode pkh
 
 paarkaSymbol :: PubKeyHash -> CurrencySymbol
 paarkaSymbol = scriptCurrencySymbol . paarkaPolicy
 
 -- | Offchain code
 
-type MintPaarkaSchema = Endpoint "mint" Integer
+type MintPaarkaSchema = Endpoint "mintPaarka" Integer
 
-mint :: Integer -> Contract w MintPaarkaSchema Text ()
-mint amount = do
+mintPaarka :: Integer -> Contract w MintPaarkaSchema Text ()
+mintPaarka amount = do
     pkh <- pubKeyHash <$> Contract.ownPubKey
     Contract.logInfo @String $ printf "PubKeyHash: %s" (show pkh)
     let paarkaCoin = "PaarkaCoin"
@@ -71,20 +72,20 @@ mint amount = do
     void $ awaitTxConfirmed $ txId ledgerTx
     Contract.logInfo @String $ printf "minted %s PaarkaCoin" (show val)
 
-endpoints :: Contract () MintPaarkaSchema Text ()
-endpoints = forever
+paarkaEndpoints :: Contract () MintPaarkaSchema Text ()
+paarkaEndpoints = forever
         $ handleError logError
-        $ awaitPromise mint'
+        $ awaitPromise mintPaarka'
   where
-    mint' = endpoint @"mint" mint
+    mintPaarka' = endpoint @"mintPaarka" mintPaarka
 
 -- | Test
 
 testPaarkaCoin :: IO ()
 testPaarkaCoin = runEmulatorTraceIO $ do
-    h1 <- activateContractWallet (Wallet 1) endpoints
-    h2 <- activateContractWallet (Wallet 2) endpoints
-    callEndpoint @"mint" h1 20
+    h1 <- activateContractWallet (Wallet 1) paarkaEndpoints
+    h2 <- activateContractWallet (Wallet 2) paarkaEndpoints
+    callEndpoint @"mintPaarka" h1 20
     void $ Emulator.waitNSlots 1
-    callEndpoint @"mint" h2 10
+    callEndpoint @"mintPaarka" h2 10
     void $ Emulator.waitNSlots 1
