@@ -33,22 +33,18 @@ import           Wallet.Emulator.Wallet
 
 {-# INLINABLE mintPolicy #-}
 mintPolicy :: BuiltinByteString -> () -> ScriptContext -> Bool
-mintPolicy nftHash _ ctx =  traceIfFalse "Wrong token name" checkTokenName
-                    && traceIfFalse "Wrong number of tokens minted" checkOneToken
-  where
-    info :: TxInfo
-    info = scriptContextTxInfo ctx
+mintPolicy nftHash _ ctx =
+    case mintedValue of
+        (cs, tn, amount)    ->
+            traceIfFalse "Wrong currency symbol"         (cs == ownCurrencySymbol ctx) &&
+            traceIfFalse "Wrong token name"              (tn == TokenName nftHash) &&
+            traceIfFalse "Wrong number of tokens minted" (amount == 1)
+    where
+        info :: TxInfo
+        info = scriptContextTxInfo ctx
 
-    mintedValue :: (CurrencySymbol, TokenName, Integer)
-    mintedValue = head [ (cs, tn, amount) | (cs, tn, amount) <- flattenValue (txInfoMint info), cs == ownCurrencySymbol ctx ]
-
-    checkOneToken :: Bool
-    checkOneToken = case mintedValue of
-        (_, _, amount)  -> amount == 1
-
-    checkTokenName :: Bool
-    checkTokenName = case mintedValue of
-        (_, tn, _)  -> tn == TokenName nftHash
+        mintedValue :: (CurrencySymbol, TokenName, Integer)
+        mintedValue = head [ (cs, tn, amount) | (cs, tn, amount) <- flattenValue (txInfoMint info), cs == ownCurrencySymbol ctx ]
 
 nftTokenPolicy :: BuiltinByteString -> Scripts.MintingPolicy
 nftTokenPolicy nftHash = mkMintingPolicyScript $
