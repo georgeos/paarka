@@ -13,6 +13,7 @@
 module Paarka.PaarkaCoin where
 
 import           Paarka.AccessToken
+import           Paarka.Utils           (paarkaPkh)
 import           Control.Monad          hiding (fmap)
 import           Data.Text              (Text)
 import           Data.Void              (Void)
@@ -33,8 +34,8 @@ import           Wallet.Emulator.Wallet
 -- | Minting policy
 
 {-# INLINABLE paarkaMintPolicy #-}
-paarkaMintPolicy :: PubKeyHash -> () -> ScriptContext -> Bool
-paarkaMintPolicy pkh _ ctx =  traceIfFalse "Wrong token minted" checkMintedCoin
+paarkaMintPolicy :: PubKeyHash -> PubKeyHash -> () -> ScriptContext -> Bool
+paarkaMintPolicy pkh pkhOwner _ ctx =  traceIfFalse "Wrong token minted" checkMintedCoin
                     &&  traceIfFalse "Not signed by Paarka" checkSignature
   where
     info :: TxInfo
@@ -47,11 +48,13 @@ paarkaMintPolicy pkh _ ctx =  traceIfFalse "Wrong token minted" checkMintedCoin
 
     checkSignature :: Bool
     checkSignature = txSignedBy info pkh
-                -- &&   pkh == PubKeyHash "35dedd2982a03cf39e7dce03c839994ffdec2ec6b04f1cf2d40e61a3"
+                &&  pkh == pkhOwner
 
 paarkaPolicy :: PubKeyHash -> Scripts.MintingPolicy
 paarkaPolicy pkh = mkMintingPolicyScript $
-    $$(PlutusTx.compile [|| Scripts.wrapMintingPolicy . paarkaMintPolicy ||]) `PlutusTx.applyCode` PlutusTx.liftCode pkh
+    $$(PlutusTx.compile [|| \pkh' paarkaPkh' -> Scripts.wrapMintingPolicy $ paarkaMintPolicy pkh' paarkaPkh' ||])
+        `PlutusTx.applyCode` PlutusTx.liftCode pkh
+        `PlutusTx.applyCode` PlutusTx.liftCode paarkaPkh
 
 paarkaSymbol :: PubKeyHash -> CurrencySymbol
 paarkaSymbol = scriptCurrencySymbol . paarkaPolicy

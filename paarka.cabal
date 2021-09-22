@@ -10,7 +10,8 @@ extra-source-files: CHANGELOG.md
 
 library
     hs-source-dirs:      src
-    exposed-modules:   Paarka.PaarkaCoin
+    exposed-modules:   Paarka.Utils
+                     , Paarka.PaarkaCoin
                      , Paarka.AccessToken
     build-depends:     aeson
                      , base ^>=4.14.1.0
