@@ -25,7 +25,6 @@ import           Data.Default               (Default (..))
 import qualified Data.Map               as Map
 import           Data.Monoid            (Last (..))
 import           Data.Text              (Text)
-import           Data.Void              ( Void )
 import           GHC.Generics           (Generic)
 import           Ledger                 hiding (mint, singleton)
 import           Ledger.Ada             as Ada
@@ -44,21 +43,25 @@ import           Wallet.Emulator.Wallet
 
 -- | Validator script
 
-data PaarkaRedeemer = Buy | SetPrice
+data PaarkaRedeemer = Buy PubKeyHash | SetPrice
     deriving Show
 
 PlutusTx.unstableMakeIsData ''PaarkaRedeemer
 
 -- | Validator
 -- Validations TODO
+-- Buy:
 -- - PaarkaValidator has NFT in input and output
 -- - Owner increases his PaarkaCoin
 -- - Buyer has one AccessToken
+-- SetPrice:
+-- Close:
+-- - Owner has NFT in output
 {-# INLINABLE paarkaValidator #-}
 paarkaValidator :: Sale -> PubKeyHash -> () -> PaarkaRedeemer -> ScriptContext -> Bool
 paarkaValidator _ pkhPaarka _ r ctx = traceIfFalse "Not signed by Paarka" checkSignature &&
     case r of
-        Buy      -> traceIfFalse "First version" True
+        Buy _    -> traceIfFalse "First version" True
         SetPrice -> traceIfFalse "Second version" True
     where
         info :: TxInfo
@@ -113,20 +116,39 @@ startSale sp = do
     void $ awaitTxConfirmed $ txId ledgerTx
     logInfo @String $ printf "sale started for token %s" (show $ sToken sp)
 
+findSale :: Sale -> Contract w s Text (Maybe (TxOutRef, ChainIndexTxOut))
+findSale sale = do
+    utxos <- utxosAt $ paarkaAddress sale
+    return $ do
+        (oref, o) <- find f $ Map.toList utxos
+        return (oref, o)
+  where
+    f :: (TxOutRef, ChainIndexTxOut) -> Bool
+    f (_, o) = assetClassValueOf (txOutValue $ toTxOut o) (assetClass (currency sale) (token sale)) == 1
+
 buy :: Sale -> Integer -> PubKeyHash -> Contract w s Text ()
 buy sale amount buyer = do
-    let tn = "PaarkaCoin"
-        paarka  = Value.singleton paarkaSymbol tn amount
-        val     = Value.singleton (nftTokenSymbol sale) (token sale) 1
-        lookups = Constraints.mintingPolicy paarkaPolicy <> Constraints.mintingPolicy (nftTokenPolicy sale)
-        tx      = Constraints.mustMintValue paarka <>
-                  Constraints.mustPayToPubKey (owner sale) paarka <>
-                  Constraints.mustMintValue val <>
-                  Constraints.mustPayToPubKey buyer val
-    ledgerTx <- submitTxConstraintsWith @Void lookups tx
-    awaitTxConfirmed $ txId ledgerTx
-    Contract.logInfo @String $ printf "minted %s tokens" (show paarka)
-    logInfo @String $ printf "purchase done %s with amount" (show sale)
+    m   <- findSale sale
+    case m of
+        Nothing      -> Contract.logInfo @String $ printf "sale not found"
+        Just(oref, o)-> do
+            let tn = "PaarkaCoin"
+                paarka  = Value.singleton paarkaSymbol tn amount
+                val     = Value.singleton (nftTokenSymbol sale) (token sale) 1
+                lookups = Constraints.unspentOutputs (Map.singleton oref o) <> 
+                          Constraints.otherScript (validator sale) <>
+                          Constraints.mintingPolicy paarkaPolicy <>
+                          Constraints.mintingPolicy (nftTokenPolicy sale)
+                tx      = Constraints.mustMintValue paarka <>
+                          Constraints.mustPayToPubKey (owner sale) paarka <>
+                          Constraints.mustMintValue val <>
+                          Constraints.mustPayToPubKey buyer val <>
+                          Constraints.mustSpendScriptOutput oref (Redeemer $ PlutusTx.toBuiltinData $ Buy buyer) <>
+                          Constraints.mustPayToOtherScript (valHash sale) (Datum $ PlutusTx.toBuiltinData ()) (txOutValue $ toTxOut o)
+            ledgerTx <- submitTxConstraintsWith @Paarka lookups tx
+            awaitTxConfirmed $ txId ledgerTx
+            Contract.logInfo @String $ printf "minted %s tokens" (show paarka)
+            logInfo @String $ printf "purchase done %s with amount" (show sale)
 
 -- | Endpoints
 
@@ -167,10 +189,15 @@ nft = AssetClass (csNFT, tnNFT)
 -- | EmulatorConfig considering only 3 wallets.
 -- Wallet 1 is Paarka, Wallet 2 is nft owner and Wallet 3 and 4 is buyer.
 emCfg :: EmulatorConfig
-emCfg = EmulatorConfig (Left $ Map.fromList [( Wallet w, if w == 2 then v <> a else a ) | w <- [1 .. 10]]) def def
+emCfg = EmulatorConfig (Left $ Map.fromList [( Wallet w,
+        case w of
+            1   -> ada 1_000_000_000
+            2   -> v <> ada 1_000_000_000
+            _   -> ada 0
+    ) | w <- [1 .. 10]]) def def
   where
-    a :: Value
-    a = Ada.lovelaceValueOf 1_000_000_000
+    ada :: Integer -> Value
+    ada val = Ada.lovelaceValueOf val
 
     v :: Value
     v = assetClassValue nft 1
