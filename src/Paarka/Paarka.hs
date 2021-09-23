@@ -12,15 +12,19 @@
 {-# LANGUAGE TypeOperators       #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Paarka.Paarka where
+module Paarka.Paarka (
+    runPaarka
+) where
 
 import           Paarka.Utils           (paarkaPkh)
+import           Paarka.PaarkaCoin      (paarkaSymbol, paarkaPolicy)
 import           Control.Monad          hiding (fmap)
 import           Data.Aeson             (FromJSON, ToJSON)
 import           Data.Default               (Default (..))
 import qualified Data.Map               as Map
 import           Data.Monoid            (Last (..))
 import           Data.Text              (Text)
+import           Data.Void              ( Void )
 import           GHC.Generics           (Generic)
 import           Ledger                 hiding (mint, singleton)
 import           Ledger.Ada             as Ada
@@ -53,9 +57,11 @@ data PaarkaRedeemer = Buy | SetPrice
 
 PlutusTx.unstableMakeIsData ''PaarkaRedeemer
 
-{-# INLINABLE mkValidator #-}
-mkValidator :: Sale -> PubKeyHash -> () -> PaarkaRedeemer -> ScriptContext -> Bool
-mkValidator _ pkhPaarka _ r ctx = traceIfFalse "Not signed by Paarka" checkSignature &&
+-- | Validator
+-- TODO
+{-# INLINABLE paarkaValidator #-}
+paarkaValidator :: Sale -> PubKeyHash -> () -> PaarkaRedeemer -> ScriptContext -> Bool
+paarkaValidator _ pkhPaarka _ r ctx = traceIfFalse "Not signed by Paarka" checkSignature &&
     case r of
         Buy      -> traceIfFalse "First version" True
         SetPrice -> traceIfFalse "Second version" True
@@ -73,7 +79,7 @@ instance Scripts.ValidatorTypes Paarka where
 
 typedValidator :: Sale -> Scripts.TypedValidator Paarka
 typedValidator sale = Scripts.mkTypedValidator @Paarka
-        ($$(PlutusTx.compile [|| mkValidator ||])
+        ($$(PlutusTx.compile [|| paarkaValidator ||])
             `PlutusTx.applyCode` PlutusTx.liftCode sale
             `PlutusTx.applyCode` PlutusTx.liftCode paarkaPkh)
         $$(PlutusTx.compile [|| wrap ||])
@@ -86,12 +92,12 @@ validator = Scripts.validatorScript . typedValidator
 valHash :: Sale -> Ledger.ValidatorHash
 valHash = Scripts.validatorHash . typedValidator
 
-scrAddress :: Sale -> Ledger.Address
-scrAddress = scriptAddress . validator
+paarkaAddress :: Sale -> Ledger.Address
+paarkaAddress = scriptAddress . validator
 
 -- | Offchain code
 
--- | Contract
+-- | Contracts
 
 data SaleParams = SaleParams {
      sCurrency :: !CurrencySymbol
@@ -112,10 +118,24 @@ startSale sp = do
     void $ awaitTxConfirmed $ txId ledgerTx
     logInfo @String $ printf "sale started for token %s" (show $ sToken sp)
 
--- | Endpoint
+buy :: Sale -> Integer -> PubKeyHash -> Contract w s Text ()
+buy sale amount _ = do
+    pkh   <- pubKeyHash <$> Contract.ownPubKey
+    let tn = "PaarkaCoin"
+        val = Value.singleton (paarkaSymbol pkh) tn amount
+        lookups = Constraints.mintingPolicy (paarkaPolicy pkh)
+        tx      = Constraints.mustMintValue val <>
+                  Constraints.mustPayToPubKey (owner sale) val
+    ledgerTx <- submitTxConstraintsWith @Void lookups tx
+    awaitTxConfirmed $ txId ledgerTx
+    Contract.logInfo @String $ printf "minted %s tokens" (show val)
+    logInfo @String $ printf "purchase done %s with amount" (show sale)
 
+-- | Endpoints
+
+-- | StartSale
 type StartSaleSchema =
-        Endpoint "start"      (CurrencySymbol, TokenName)
+    Endpoint "start" (CurrencySymbol, TokenName)
 
 startEndpoint :: Contract (Last SaleParams) StartSaleSchema Text ()
 startEndpoint = forever
@@ -124,7 +144,18 @@ startEndpoint = forever
     where 
         start' = endpoint @"start" $ \(cs, tn) -> startSale SaleParams{ sCurrency= cs, sToken=tn }
 
--- | Test
+-- | Sale
+type SaleSchema =
+    Endpoint "buy" (Integer, PubKeyHash)
+
+saleEndpoints :: Sale -> Contract () SaleSchema Text ()
+saleEndpoints sale = forever
+            $ handleError logError
+            $ awaitPromise buy'
+    where
+        buy' = endpoint @"buy" $ uncurry (buy sale)
+
+-- | Trace
 
 csNFT :: CurrencySymbol
 csNFT = "aa"
@@ -132,20 +163,31 @@ csNFT = "aa"
 tnNFT :: TokenName
 tnNFT = "A"
 
+-- | AssetClass used as NFT to sale
 nft :: AssetClass
 nft = AssetClass (csNFT, tnNFT)
 
-runPaarka :: IO ()
-runPaarka = runEmulatorTraceIO' def emCfg tracePaarka
-
+-- | EmulatorConfig considering only 3 wallets.
+-- Wallet 1 is Paarka, Wallet 2 is nft owner and Wallet 3 is buyer.
 emCfg :: EmulatorConfig
-emCfg = EmulatorConfig (Left $ Map.fromList [(Wallet w, v) | w <- [1 .. 3]]) def def
+emCfg = EmulatorConfig (Left $ Map.fromList [( Wallet w, if w == 2 then v <> a else a ) | w <- [1 .. 3]]) def def
   where
+    a :: Value
+    a = Ada.lovelaceValueOf 1_000_000_000
+
     v :: Value
-    v = Ada.lovelaceValueOf 1_000_000_000 <> assetClassValue nft 1
+    v = assetClassValue nft 1
 
 tracePaarka :: EmulatorTrace ()
 tracePaarka = do
     h2 <- activateContractWallet (Wallet 2) startEndpoint
+    let saleOwner = pubKeyHash $ walletPubKey $ Wallet 2
+        buyer = pubKeyHash $ walletPubKey $ Wallet 3
     callEndpoint @"start" h2 (csNFT, tnNFT)
+    void $ Emulator.waitNSlots 2
+    h1 <- activateContractWallet (Wallet 1) $ saleEndpoints Sale{ currency=csNFT, token=tnNFT, owner=saleOwner }
+    callEndpoint @"buy" h1 (10, buyer)
     void $ Emulator.waitNSlots 1
+
+runPaarka :: IO ()
+runPaarka = runEmulatorTraceIO' def emCfg tracePaarka

@@ -10,7 +10,11 @@
 {-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module Paarka.PaarkaCoin where
+module Paarka.PaarkaCoin (
+    paarkaSymbol,
+    paarkaPolicy,
+    testPaarkaCoin
+) where
 
 import           Paarka.AccessToken
 import           Paarka.Utils           (paarkaPkh)
