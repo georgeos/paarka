@@ -10,35 +10,38 @@
 {-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module Paarka.AccessToken where
+module Paarka.AccessToken (
+    nftTokenSymbol,
+    nftTokenPolicy,
+) where
 
+import           Paarka.Utils           (paarkaPkh, Sale(..))
 import           Control.Monad          hiding (fmap)
 import           Data.Text              (Text)
 import           Data.Void              (Void)
 import           Plutus.Contract        as Contract
-import           Plutus.Trace.Emulator  as Emulator
 import qualified PlutusTx
 import           PlutusTx.Prelude       hiding (Semigroup(..), unless)
 import           Ledger                 hiding (mint, singleton)
 import           Ledger.Constraints     as Constraints
 import qualified Ledger.Typed.Scripts   as Scripts
 import           Ledger.Value           as Value
-import           Prelude                (IO, Show (..), String)
+import           Prelude                (Show (..), String)
 import           Text.Printf            (printf)
-import           Wallet.Emulator.Wallet
 
 -- | Onchain code
 
 -- | Minting policy
 
 {-# INLINABLE mintPolicy #-}
-mintPolicy :: BuiltinByteString -> () -> ScriptContext -> Bool
-mintPolicy nftHash _ ctx =
+mintPolicy :: Sale -> PubKeyHash -> () -> ScriptContext -> Bool
+mintPolicy sale pkhOwner _ ctx =
     case mintedValue of
         (cs, tn, amount)    ->
             traceIfFalse "Wrong currency symbol"         (cs == ownCurrencySymbol ctx) &&
-            traceIfFalse "Wrong token name"              (tn == TokenName nftHash) &&
-            traceIfFalse "Wrong number of tokens minted" (amount == 1)
+            traceIfFalse "Wrong token name"              (tn == token sale) &&
+            traceIfFalse "Wrong number of tokens minted" (amount == 1) &&
+            traceIfFalse "Not signed by Paarka" checkSignature
     where
         info :: TxInfo
         info = scriptContextTxInfo ctx
@@ -46,27 +49,30 @@ mintPolicy nftHash _ ctx =
         mintedValue :: (CurrencySymbol, TokenName, Integer)
         mintedValue = head [ (cs, tn, amount) | (cs, tn, amount) <- flattenValue (txInfoMint info), cs == ownCurrencySymbol ctx ]
 
-nftTokenPolicy :: BuiltinByteString -> Scripts.MintingPolicy
-nftTokenPolicy nftHash = mkMintingPolicyScript $
-    $$(PlutusTx.compile [|| Scripts.wrapMintingPolicy . mintPolicy ||])
-    `PlutusTx.applyCode`
-    PlutusTx.liftCode nftHash
+        checkSignature :: Bool
+        checkSignature = txSignedBy info pkhOwner
 
-nftTokenSymbol :: BuiltinByteString -> CurrencySymbol
+nftTokenPolicy :: Sale -> Scripts.MintingPolicy
+nftTokenPolicy sale = mkMintingPolicyScript $
+    $$(PlutusTx.compile [|| \sale' paarkaPkh' -> Scripts.wrapMintingPolicy $ mintPolicy sale' paarkaPkh' ||])
+    `PlutusTx.applyCode` PlutusTx.liftCode sale
+    `PlutusTx.applyCode` PlutusTx.liftCode paarkaPkh
+
+nftTokenSymbol :: Sale -> CurrencySymbol
 nftTokenSymbol = scriptCurrencySymbol . nftTokenPolicy
 
 -- | Offchain code
 
-type MintAccessTokenSchema = Endpoint "mint" BuiltinByteString
+type MintAccessTokenSchema = Endpoint "mint" Sale
 
-mint :: BuiltinByteString   -> Contract w MintAccessTokenSchema Text ()
-mint nftHash = do
-    let val     = Value.singleton (nftTokenSymbol nftHash) (TokenName nftHash) 1
-        lookups = Constraints.mintingPolicy (nftTokenPolicy nftHash)
+mint :: Sale   -> Contract w MintAccessTokenSchema Text ()
+mint sale = do
+    let val     = Value.singleton (nftTokenSymbol sale) (token sale) 1
+        lookups = Constraints.mintingPolicy (nftTokenPolicy sale)
         tx      = Constraints.mustMintValue val
     ledgerTx <- submitTxConstraintsWith @Void lookups tx
     void $ awaitTxConfirmed $ txId ledgerTx
-    Contract.logInfo @String $ printf "minted 1 %s" (show nftHash)
+    Contract.logInfo @String $ printf "minted 1 %s" (show sale)
 
 endpoints :: Contract () MintAccessTokenSchema Text ()
 endpoints = forever
@@ -74,14 +80,3 @@ endpoints = forever
         $ awaitPromise mint'
   where
     mint' = endpoint @"mint" mint
-
--- | Test
-
-testAccessToken :: IO ()
-testAccessToken = runEmulatorTraceIO $ do
-    h1 <- activateContractWallet (Wallet 1) endpoints
-    h2 <- activateContractWallet (Wallet 2) endpoints
-    callEndpoint @"mint" h1 "MyNFT"
-    void $ Emulator.waitNSlots 1
-    callEndpoint @"mint" h2 "OtherNFT"
-    void $ Emulator.waitNSlots 1

@@ -16,7 +16,6 @@ module Paarka.PaarkaCoin (
     testPaarkaCoin
 ) where
 
-import           Paarka.AccessToken
 import           Paarka.Utils           (paarkaPkh)
 import           Control.Monad          hiding (fmap)
 import           Data.Text              (Text)
@@ -38,30 +37,29 @@ import           Wallet.Emulator.Wallet
 -- | Minting policy
 
 {-# INLINABLE paarkaMintPolicy #-}
-paarkaMintPolicy :: PubKeyHash -> PubKeyHash -> () -> ScriptContext -> Bool
-paarkaMintPolicy pkh pkhOwner _ ctx =  traceIfFalse "Wrong token minted" checkMintedCoin
-                    &&  traceIfFalse "Not signed by Paarka" checkSignature
+paarkaMintPolicy :: PubKeyHash -> () -> ScriptContext -> Bool
+paarkaMintPolicy pkhOwner _ ctx = traceIfFalse "Not signed by Paarka"              checkSignature &&
+    case mintedValue of
+        (cs, tn, _)    ->
+            traceIfFalse "Wrong currency symbol" (cs == ownCurrencySymbol ctx) &&
+            traceIfFalse "Wrong token name"      (tn == TokenName "PaarkaCoin")
   where
     info :: TxInfo
     info = scriptContextTxInfo ctx
 
-    checkMintedCoin :: Bool
-    checkMintedCoin = case flattenValue (txInfoMint info) of
-        [(cs, tn, _)] -> cs  == ownCurrencySymbol ctx && tn == TokenName "PaarkaCoin"
-        _                -> False
+    mintedValue :: (CurrencySymbol, TokenName, Integer)
+    mintedValue = head [ (cs, tn, amount) | (cs, tn, amount) <- flattenValue (txInfoMint info), cs == ownCurrencySymbol ctx ]
 
     checkSignature :: Bool
-    checkSignature = txSignedBy info pkh
-                &&  pkh == pkhOwner
+    checkSignature = txSignedBy info pkhOwner
 
-paarkaPolicy :: PubKeyHash -> Scripts.MintingPolicy
-paarkaPolicy pkh = mkMintingPolicyScript $
-    $$(PlutusTx.compile [|| \pkh' paarkaPkh' -> Scripts.wrapMintingPolicy $ paarkaMintPolicy pkh' paarkaPkh' ||])
-        `PlutusTx.applyCode` PlutusTx.liftCode pkh
+paarkaPolicy :: Scripts.MintingPolicy
+paarkaPolicy = mkMintingPolicyScript $
+    $$(PlutusTx.compile [|| Scripts.wrapMintingPolicy . paarkaMintPolicy ||])
         `PlutusTx.applyCode` PlutusTx.liftCode paarkaPkh
 
-paarkaSymbol :: PubKeyHash -> CurrencySymbol
-paarkaSymbol = scriptCurrencySymbol . paarkaPolicy
+paarkaSymbol ::  CurrencySymbol
+paarkaSymbol = scriptCurrencySymbol paarkaPolicy
 
 -- | Offchain code
 
@@ -72,8 +70,8 @@ mintPaarka amount = do
     pkh <- pubKeyHash <$> Contract.ownPubKey
     Contract.logInfo @String $ printf "PubKeyHash: %s" (show pkh)
     let paarkaCoin = "PaarkaCoin"
-        val     = Value.singleton (paarkaSymbol pkh) paarkaCoin amount
-        lookups = Constraints.mintingPolicy (paarkaPolicy pkh)
+        val     = Value.singleton paarkaSymbol paarkaCoin amount
+        lookups = Constraints.mintingPolicy paarkaPolicy
         tx      = Constraints.mustMintValue val
     ledgerTx <- submitTxConstraintsWith @Void lookups tx
     void $ awaitTxConfirmed $ txId ledgerTx

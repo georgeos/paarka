@@ -16,8 +16,9 @@ module Paarka.Paarka (
     runPaarka
 ) where
 
-import           Paarka.Utils           (paarkaPkh)
+import           Paarka.Utils           (paarkaPkh, Sale(..))
 import           Paarka.PaarkaCoin      (paarkaSymbol, paarkaPolicy)
+import           Paarka.AccessToken     (nftTokenSymbol, nftTokenPolicy)
 import           Control.Monad          hiding (fmap)
 import           Data.Aeson             (FromJSON, ToJSON)
 import           Data.Default               (Default (..))
@@ -36,19 +37,10 @@ import           Plutus.Trace.Emulator  as Emulator
 import qualified PlutusTx
 import           PlutusTx.Prelude       hiding (Semigroup(..), unless)
 import           Prelude                (IO, Show (..), String, (<>))
-import qualified Prelude
 import           Text.Printf            (printf)
 import           Wallet.Emulator.Wallet
 
 -- | Onchain code
-
-data Sale = Sale
-    { owner     :: !PubKeyHash
-    , currency  :: !CurrencySymbol
-    , token     :: !TokenName
-    } deriving (Show, Generic, FromJSON, ToJSON, Prelude.Eq, Prelude.Ord)
-
-PlutusTx.makeLift ''Sale
 
 -- | Validator script
 
@@ -58,7 +50,10 @@ data PaarkaRedeemer = Buy | SetPrice
 PlutusTx.unstableMakeIsData ''PaarkaRedeemer
 
 -- | Validator
--- TODO
+-- Validations TODO
+-- - PaarkaValidator has NFT in input and output
+-- - Owner increases his PaarkaCoin
+-- - Buyer has one AccessToken
 {-# INLINABLE paarkaValidator #-}
 paarkaValidator :: Sale -> PubKeyHash -> () -> PaarkaRedeemer -> ScriptContext -> Bool
 paarkaValidator _ pkhPaarka _ r ctx = traceIfFalse "Not signed by Paarka" checkSignature &&
@@ -119,16 +114,18 @@ startSale sp = do
     logInfo @String $ printf "sale started for token %s" (show $ sToken sp)
 
 buy :: Sale -> Integer -> PubKeyHash -> Contract w s Text ()
-buy sale amount _ = do
-    pkh   <- pubKeyHash <$> Contract.ownPubKey
+buy sale amount buyer = do
     let tn = "PaarkaCoin"
-        val = Value.singleton (paarkaSymbol pkh) tn amount
-        lookups = Constraints.mintingPolicy (paarkaPolicy pkh)
-        tx      = Constraints.mustMintValue val <>
-                  Constraints.mustPayToPubKey (owner sale) val
+        paarka  = Value.singleton paarkaSymbol tn amount
+        val     = Value.singleton (nftTokenSymbol sale) (token sale) 1
+        lookups = Constraints.mintingPolicy paarkaPolicy <> Constraints.mintingPolicy (nftTokenPolicy sale)
+        tx      = Constraints.mustMintValue paarka <>
+                  Constraints.mustPayToPubKey (owner sale) paarka <>
+                  Constraints.mustMintValue val <>
+                  Constraints.mustPayToPubKey buyer val
     ledgerTx <- submitTxConstraintsWith @Void lookups tx
     awaitTxConfirmed $ txId ledgerTx
-    Contract.logInfo @String $ printf "minted %s tokens" (show val)
+    Contract.logInfo @String $ printf "minted %s tokens" (show paarka)
     logInfo @String $ printf "purchase done %s with amount" (show sale)
 
 -- | Endpoints
@@ -168,9 +165,9 @@ nft :: AssetClass
 nft = AssetClass (csNFT, tnNFT)
 
 -- | EmulatorConfig considering only 3 wallets.
--- Wallet 1 is Paarka, Wallet 2 is nft owner and Wallet 3 is buyer.
+-- Wallet 1 is Paarka, Wallet 2 is nft owner and Wallet 3 and 4 is buyer.
 emCfg :: EmulatorConfig
-emCfg = EmulatorConfig (Left $ Map.fromList [( Wallet w, if w == 2 then v <> a else a ) | w <- [1 .. 3]]) def def
+emCfg = EmulatorConfig (Left $ Map.fromList [( Wallet w, if w == 2 then v <> a else a ) | w <- [1 .. 10]]) def def
   where
     a :: Value
     a = Ada.lovelaceValueOf 1_000_000_000
@@ -182,11 +179,14 @@ tracePaarka :: EmulatorTrace ()
 tracePaarka = do
     h2 <- activateContractWallet (Wallet 2) startEndpoint
     let saleOwner = pubKeyHash $ walletPubKey $ Wallet 2
-        buyer = pubKeyHash $ walletPubKey $ Wallet 3
+        buyer3 = pubKeyHash $ walletPubKey $ Wallet 3
+        buyer4 = pubKeyHash $ walletPubKey $ Wallet 4
     callEndpoint @"start" h2 (csNFT, tnNFT)
     void $ Emulator.waitNSlots 2
     h1 <- activateContractWallet (Wallet 1) $ saleEndpoints Sale{ currency=csNFT, token=tnNFT, owner=saleOwner }
-    callEndpoint @"buy" h1 (10, buyer)
+    callEndpoint @"buy" h1 (10, buyer3)
+    void $ Emulator.waitNSlots 1
+    callEndpoint @"buy" h1 (10, buyer4)
     void $ Emulator.waitNSlots 1
 
 runPaarka :: IO ()
