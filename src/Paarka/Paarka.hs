@@ -43,25 +43,26 @@ import           Wallet.Emulator.Wallet
 
 -- | Validator script
 
-data PaarkaRedeemer = Buy PubKeyHash | SetPrice
+data PaarkaRedeemer = Buy PubKeyHash CurrencySymbol CurrencySymbol | SetPrice
     deriving Show
 
 PlutusTx.unstableMakeIsData ''PaarkaRedeemer
 
 -- | Validator
 -- Validations TODO
--- Buy:
--- - PaarkaValidator has NFT in input and output
--- - Owner increases his PaarkaCoin
--- - Buyer has one AccessToken
+-- Buy: not sure about Buy Redeemer, maybe there could be a security issue.
 -- SetPrice:
 -- Close:
 -- - Owner has NFT in output
 {-# INLINABLE paarkaValidator #-}
 paarkaValidator :: Sale -> PubKeyHash -> () -> PaarkaRedeemer -> ScriptContext -> Bool
-paarkaValidator _ pkhPaarka _ r ctx = traceIfFalse "Not signed by Paarka" checkSignature &&
+paarkaValidator sale pkhPaarka _ r ctx = traceIfFalse "Not signed by Paarka" checkSignature &&
     case r of
-        Buy _    -> traceIfFalse "First version" True
+        Buy buyer paarka accessToken ->
+            traceIfFalse "token missing from input"                 (hasNFT ownInput) &&
+            traceIfFalse "token missing from output"                (hasNFT ownOutput) &&
+            traceIfFalse "access token missing from buyer"          (accessTokenToBuyer buyer accessToken) &&
+            traceIfFalse "access token missing from buyer"          (paarkaSpent paarka < paarkaProduced paarka)
         SetPrice -> traceIfFalse "Second version" True
     where
         info :: TxInfo
@@ -69,6 +70,28 @@ paarkaValidator _ pkhPaarka _ r ctx = traceIfFalse "Not signed by Paarka" checkS
 
         checkSignature :: Bool
         checkSignature = txSignedBy info pkhPaarka
+
+        ownInput :: TxOut
+        ownInput = case findOwnInput ctx of
+            Nothing -> traceError "sale input missing"
+            Just i  -> txInInfoResolved i
+
+        ownOutput :: TxOut
+        ownOutput = case getContinuingOutputs ctx of
+            [o] -> o
+            _   -> traceError "missing one sale output"
+
+        hasNFT :: TxOut -> Bool
+        hasNFT txOut = assetClassValueOf (txOutValue txOut ) (assetClass (currency sale) (token sale)) == 1
+
+        accessTokenToBuyer :: PubKeyHash -> CurrencySymbol -> Bool
+        accessTokenToBuyer buyer accessToken = assetClassValueOf (valuePaidTo info buyer) (assetClass accessToken (token sale)) == 1
+
+        paarkaSpent :: CurrencySymbol -> Integer
+        paarkaSpent paarka =  assetClassValueOf (valueSpent info) (assetClass paarka (TokenName "PaarkaCoin"))
+
+        paarkaProduced :: CurrencySymbol -> Integer
+        paarkaProduced paarka =  assetClassValueOf (valueProduced info) (assetClass paarka (TokenName "PaarkaCoin"))
 
 data Paarka
 instance Scripts.ValidatorTypes Paarka where
@@ -143,7 +166,7 @@ buy sale amount buyer = do
                           Constraints.mustPayToPubKey (owner sale) paarka <>
                           Constraints.mustMintValue val <>
                           Constraints.mustPayToPubKey buyer val <>
-                          Constraints.mustSpendScriptOutput oref (Redeemer $ PlutusTx.toBuiltinData $ Buy buyer) <>
+                          Constraints.mustSpendScriptOutput oref (Redeemer $ PlutusTx.toBuiltinData $ Buy buyer paarkaSymbol (nftTokenSymbol sale)) <>
                           Constraints.mustPayToOtherScript (valHash sale) (Datum $ PlutusTx.toBuiltinData ()) (txOutValue $ toTxOut o)
             ledgerTx <- submitTxConstraintsWith @Paarka lookups tx
             awaitTxConfirmed $ txId ledgerTx
