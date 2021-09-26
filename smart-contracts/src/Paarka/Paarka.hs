@@ -110,9 +110,6 @@ typedValidator sale = Scripts.mkTypedValidator @Paarka
 validator :: Sale -> Validator
 validator = Scripts.validatorScript . typedValidator
 
-valHash :: Sale -> Ledger.ValidatorHash
-valHash = Scripts.validatorHash . typedValidator
-
 paarkaAddress :: Sale -> Ledger.Address
 paarkaAddress = scriptAddress . validator
 
@@ -158,7 +155,7 @@ buy sale amount buyer = do
             let tn = "PaarkaCoin"
                 paarka  = Value.singleton paarkaSymbol tn amount
                 val     = Value.singleton (nftTokenSymbol sale) (token sale) 1
-                lookups = Constraints.unspentOutputs (Map.singleton oref o) <> 
+                lookups = Constraints.unspentOutputs (Map.singleton oref o) <>
                           Constraints.otherScript (validator sale) <>
                           Constraints.mintingPolicy paarkaPolicy <>
                           Constraints.mintingPolicy (nftTokenPolicy sale)
@@ -183,7 +180,7 @@ startEndpoint :: Contract (Last SaleParams) StartSaleSchema Text ()
 startEndpoint = forever
               $ handleError logError
               $ awaitPromise start'
-    where 
+    where
         start' = endpoint @"start" $ \(cs, tn) -> startSale SaleParams{ sCurrency= cs, sToken=tn }
 
 -- | Sale
@@ -241,3 +238,16 @@ tracePaarka = do
 
 runPaarka :: IO ()
 runPaarka = runEmulatorTraceIO' def emCfg tracePaarka
+
+
+runPaarkaPab :: OracleParams -> Contract (Last Oracle) OracleSchema DataText.Text ()
+runPaarkaPab op = do
+    oracle <- startOracle op
+    tell $ Last $ Just oracle
+    go oracle
+  where
+    go :: Oracle -> Contract (Last Oracle) OracleSchema DataText.Text a
+    go oracle = do
+        x <- endpoint @"update"
+        updateOracle oracle x
+        go oracle
