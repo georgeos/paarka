@@ -14,3 +14,4 @@ Digital files encrypted and licensed via NFT tokens to protect the files from pi
 
 ### Structure visualization
 <img src="./docs/high-level-concept.jpg" width="500">
+[edit](https://docs.google.com/presentation/d/1-XHiG_ojCZpwFK9q5MCR0JgzcQWZYFpAgp6rBuORGXU/edit?usp=sharing)
