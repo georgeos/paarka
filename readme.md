@@ -2,7 +2,7 @@
 
 ## Publish anywhere, grow everywhere
 
-[Paarka](https://hackcardano.cardstarter.io/project/paarka/) allows content creators to publish individually unique & limited edition encrypted videos and audio files, and mint tokens to act as a license that will decrypt or unlock those media files. 
+[Paarka](https://hackcardano.cardstarter.io/project/paarka/) allows content creators to publish individually unique & limited edition encrypted videos and audio files, and mint tokens to act as a license that will decrypt or unlock those media files.
 
 Our platform allows you to grow  your community, incentivize marketing partners, share profits with customizable smart contracts, track engagement, buy, sell and trade NFT’s with several innovative adaptations for the Cardano blockchain.
 
@@ -12,3 +12,5 @@ Distributors and content creators lack good solutions to market, monetize their 
 ### Solution
 Digital files encrypted and licensed via NFT tokens to protect the files from piracy. The NFT tokens can be bought sold and transferred securely as well as gamified to increase engagement. Smart contract affiliate links provide a way to engage marketing partners. Decentralized marketplaces remove middlemen and allow trading of these digital assets.
 
+### Structure visualization
+<img src="./docs/high-level-concept.jpg" width="500">
