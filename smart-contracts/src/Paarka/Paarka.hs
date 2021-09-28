@@ -110,6 +110,9 @@ typedValidator sale = Scripts.mkTypedValidator @Paarka
 validator :: Sale -> Validator
 validator = Scripts.validatorScript . typedValidator
 
+valHash :: Sale -> Ledger.ValidatorHash
+valHash = Scripts.validatorHash . typedValidator
+
 paarkaAddress :: Sale -> Ledger.Address
 paarkaAddress = scriptAddress . validator
 
@@ -240,14 +243,14 @@ runPaarka :: IO ()
 runPaarka = runEmulatorTraceIO' def emCfg tracePaarka
 
 
-runPaarkaPab :: OracleParams -> Contract (Last Oracle) OracleSchema DataText.Text ()
-runPaarkaPab op = do
-    oracle <- startOracle op
-    tell $ Last $ Just oracle
-    go oracle
-  where
-    go :: Oracle -> Contract (Last Oracle) OracleSchema DataText.Text a
-    go oracle = do
-        x <- endpoint @"update"
-        updateOracle oracle x
-        go oracle
+-- runPaarkaPab :: OracleParams -> Contract (Last Oracle) OracleSchema DataText.Text ()
+-- runPaarkaPab op = do
+--     oracle <- startOracle op
+--     tell $ Last $ Just oracle
+--     go oracle
+--   where
+--     go :: Oracle -> Contract (Last Oracle) OracleSchema DataText.Text a
+--     go oracle = do
+--         x <- endpoint @"update"
+--         updateOracle oracle x
+--         go oracle
