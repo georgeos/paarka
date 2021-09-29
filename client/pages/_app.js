@@ -31,7 +31,7 @@ function MyApp({ Component, pageProps }) {
                   {item.name}
                 </a>
               ))}
-              <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
+              <a href="login" className="font-medium text-blue-600 hover:text-blue-500">
                 Log in
               </a>
             </div>
