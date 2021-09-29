@@ -1,35 +1,43 @@
 /* pages/_app.js */
 import '../styles/globals.css'
-import Link from 'next/link'
+import { Popover } from '@headlessui/react'
+
+const navigation = [
+  { name: 'Home', href: '/' },
+  { name: 'Movies', href: '/#movies' },
+  { name: 'Sell', href: '/create-item' },
+  { name: 'My movies', href: '/my-assets' },
+]
 
 function MyApp({ Component, pageProps }) {
   return (
     <div>
-      <nav className="border-b p-6">
-        <p className="text-4xl font-bold">Paarka</p>
-        <div className="flex mt-4">
-          <Link href="/">
-            <a className="mr-4 text-grey-500">
-              Home
-            </a>
-          </Link>
-          <Link href="/create-item">
-            <a className="mr-6 text-grey-500">
-              Sell Digital Asset
-            </a>
-          </Link>
-          <Link href="/my-assets">
-            <a className="mr-6 text-grey-500">
-              My Digital Assets
-            </a>
-          </Link>
-          <Link href="/creator-dashboard">
-            <a className="mr-6 text-grey-500">
-              Creator Dashboard
-            </a>
-          </Link>
+      <Popover>
+        <div className="relative py-6 pt-6 px-4 sm:px-6 lg:px-8">
+          <nav className="relative flex items-center justify-between sm:h-12 lg:justify-start" aria-label="Global">
+            <div className="flex items-center flex-grow flex-shrink-0 lg:flex-grow-0">
+              <div className="flex items-center justify-between w-full md:w-auto">
+                <a href="/">
+                  <img
+                    className="h-12 w-auto sm:h-8"
+                    src="paarka.png"
+                  />
+                </a>
+              </div>
+            </div>
+            <div className="hidden md:block md:ml-10 md:pr-4 md:space-x-8">
+              {navigation.map((item) => (
+                <a key={item.name} href={item.href} className="font-medium text-gray-500 hover:text-gray-900">
+                  {item.name}
+                </a>
+              ))}
+              <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
+                Log in
+              </a>
+            </div>
+          </nav>
         </div>
-      </nav>
+      </Popover>
       <Component {...pageProps} />
     </div>
   )
