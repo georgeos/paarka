@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import axios from 'axios'
+import axios from 'axios';
+import movies from './movies.json';
+import Link from 'next/link'
 
 async function postImage({image, description}) {
   const formData = new FormData();
@@ -9,58 +10,6 @@ async function postImage({image, description}) {
   const result = await axios.post('http://localhost:3001/images', formData, { headers: {'Content-Type': 'multipart/form-data'}})
   return result.data
 }
-
-const movies = [
-  {
-    id: 1,
-    name: 'Bad sport',
-    href: '#',
-    videoSrc: 'https://www.youtube.com/embed/IwQcnDT7xT0',
-    imageAlt: "True crime and sports intersect in a docuseries that examines global controversies and scandals with firsthand accounts from those involved.",
-    price: '$5'
-  },
-  {
-    id: 2,
-    name: 'Halloween Kills Final',
-    href: '#',
-    videoSrc: 'https://www.youtube.com/embed/pTG3sbBi54M',
-    imageAlt: "Check out the Halloween Kills Official Trailer starring Jamie Lee Curtis! Let us know what you think in the comments below.",
-    price: '$4'
-  },
-  {
-    id: 3,
-    name: 'Marvel\'s The Avengers',
-    href: '#',
-    videoSrc: 'https://www.youtube.com/embed/eOrNdBpGMv8',
-    imageAlt: "Watch the first trailer for Marvel\'s The Avengers, in theaters May 4, 2012.",
-    price: '$7'
-  },
-  {
-    id: 4,
-    name: 'Forrest Gump',
-    href: '#',
-    videoSrc: 'https://www.youtube.com/embed/bLvqoHBptjg',
-    imageAlt: "Stupid is as stupid does, says Forrest Gump (played by Tom Hanks in an Oscar-winning performance) as he discusses his relative level of intelligence with a stranger while waiting for a bus. Despite his sub-normal IQ, Gump leads a truly charmed life, with a ringside seat for many of",
-    price: '$4'
-  },
-  {
-    id: 5,
-    name: 'Halloween Kills Final',
-    href: '#',
-    videoSrc: 'https://www.youtube.com/embed/pTG3sbBi54M',
-    imageAlt: "Check out the Halloween Kills Official Trailer starring Jamie Lee Curtis! Let us know what you think in the comments below.",
-    price: '$4'
-  },
-  {
-    id: 6,
-    name: 'Halloween Kills Final',
-    href: '#',
-    videoSrc: 'https://www.youtube.com/embed/pTG3sbBi54M',
-    imageAlt: "Check out the Halloween Kills Official Trailer starring Jamie Lee Curtis! Let us know what you think in the comments below.",
-    price: '$4'
-  },
-]
-
 
 function App() {
   return (
@@ -102,20 +51,16 @@ function App() {
               <iframe width="600" height="315" src={movie.videoSrc}></iframe>
               <div className="mt-4 flex justify-between">
                 <div>
-                  <h3 className="text-xl font-extrabold">
-                    <a href={movie.href}>
-                      <span aria-hidden="true" className="absolute inset-0" />
-                      {movie.name}
-                    </a>
-                  </h3>
+                  <h3 className="text-xl font-extrabold">{movie.name}</h3>
                 </div>
-                <div className="inline-flex rounded-md shadow">
+                <Link href="/buy/[id]" as={`/buy/${movie.id}`}
+                    >
                   <a
-                    href="#movies"
                     className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600"
-                  > Buy {movie.price}
+                  >
+                    Buy ${movie.price}
                   </a>
-                </div>
+                </Link>
               </div>
             </div>
           ))}
