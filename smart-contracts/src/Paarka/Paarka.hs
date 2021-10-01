@@ -26,7 +26,7 @@ import           Paarka.PaarkaCoin      (paarkaSymbol, paarkaPolicy)
 import           Paarka.AccessToken     (nftTokenSymbol, nftTokenPolicy)
 import           Control.Monad          hiding (fmap)
 import           Data.Aeson             (FromJSON, ToJSON)
-import           Data.Default               (Default (..))
+import           Data.Default           (Default (..))
 import qualified Data.Map               as Map
 import           Data.Monoid            (Last (..))
 import           Data.Text              (Text)

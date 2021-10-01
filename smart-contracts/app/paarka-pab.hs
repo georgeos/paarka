@@ -20,9 +20,11 @@ import           Control.Monad.Freer.Error           (Error)
 import           Control.Monad.Freer.Extras.Log      (LogMsg)
 import           Control.Monad.IO.Class              (MonadIO (..))
 import           Data.Aeson                          (FromJSON, Result (..), fromJSON)
+import           Data.Data                           (Proxy (Proxy))
 import           Data.Default                        (Default (..))
 import           Data.Monoid                         (Last (..))
 import           Data.Text                           (Text, pack)
+import           Language.PureScript.Bridge          (equal, genericShow, mkSumType)
 import           Ledger
 import           Ledger.Constraints
 import qualified Ledger.Value                        as Value
@@ -38,7 +40,7 @@ import           Plutus.PAB.Types                    (PABError (..))
 import           Plutus.PAB.Run                      (runWith)
 import qualified Plutus.PAB.Webserver.Server         as PAB.Server
 import qualified Plutus.Contracts.Currency           as Currency
--- import           PlutusTx.Prelude                    hiding (Semigroup(..), unless)
+import           Plutus.PAB.Run.PSGenerator          (HasPSTypes (..))
 import           Wallet.Emulator.Types               (Wallet (..), walletPubKey)
 import           Wallet.Types                        (ContractInstanceId (..))
 import qualified Paarka.Paarka                       as Paarka
@@ -57,6 +59,13 @@ main :: IO ()
 main = do
     runWith (Builtin.handleBuiltin @PaarkaContracts)
 
+instance HasPSTypes PaarkaContracts where
+    psTypes p =
+        [ (equal <*> (genericShow <*> mkSumType)) p
+        -- These types come from the Uniswap contract and need to be available in PS
+        -- , (equal <*> (genericShow <*> mkSumType)) (Proxy @Paarka.SaleParams)
+        -- , (equal <*> (genericShow <*> mkSumType)) (Proxy @Sale)
+        ]
 
 -- | StartSale and Buy must have parameters because getPaarkaContractsSchema and getPaarkaContracts
 -- I think there should be an additional Definition like: Init (similar to oracle-pab) in order to initialize wallets
@@ -77,7 +86,7 @@ getPaarkaContractsSchema = \case
 getPaarkaContracts :: PaarkaContracts -> SomeBuiltin
 getPaarkaContracts = \case
     StartSale saleparams        -> SomeBuiltin Paarka.startSale $ Paarka.SaleParams saleparams
-    Buy       sale amount buyer -> SomeBuiltin $ Paarka.buy $ Sale sale $ Integer amount $ PubKeyHash buyer
+    Buy       sale amount buyer -> SomeBuiltin $ Paarka.buy $ Sale sale $ Integer amount $ Ledger.PubKeyHash buyer
 
 handlers :: SimulatorEffectHandlers (Builtin PaarkaContracts)
 handlers =

@@ -48,4 +48,5 @@ executable paarka-pab
                      , paarka
                      , plutus-use-cases
                      , plutus-tx
+                     , purescript-bridge
                      , text
