@@ -38,7 +38,7 @@ import           Plutus.PAB.Types                    (PABError (..))
 import           Plutus.PAB.Run                      (runWith)
 import qualified Plutus.PAB.Webserver.Server         as PAB.Server
 import qualified Plutus.Contracts.Currency           as Currency
-import           PlutusTx.Prelude                    hiding (Semigroup(..), unless)
+-- import           PlutusTx.Prelude                    hiding (Semigroup(..), unless)
 import           Wallet.Emulator.Types               (Wallet (..), walletPubKey)
 import           Wallet.Types                        (ContractInstanceId (..))
 import qualified Paarka.Paarka                       as Paarka
@@ -57,6 +57,7 @@ main :: IO ()
 main = do
     runWith (Builtin.handleBuiltin @PaarkaContracts)
 
+
 -- | StartSale and Buy must have parameters because getPaarkaContractsSchema and getPaarkaContracts
 -- I think there should be an additional Definition like: Init (similar to oracle-pab) in order to initialize wallets
 instance HasDefinitions PaarkaContracts where
@@ -72,11 +73,11 @@ getPaarkaContractsSchema = \case
     StartSale -> Builtin.endpointsToSchemas @Paarka.StartSaleSchema
     Buy       -> Builtin.endpointsToSchemas @Paarka.SaleSchema
 
--- | StartSale and Buy must have parameters to pass into Paarka.startSale and Paarka.buy contracts 
+-- | StartSale and Buy must have parameters to pass into Paarka.startSale and Paarka.buy contracts
 getPaarkaContracts :: PaarkaContracts -> SomeBuiltin
 getPaarkaContracts = \case
-    StartSale -> SomeBuiltin Paarka.startSale
-    Buy       -> SomeBuiltin Paarka.buy
+    StartSale saleparams        -> SomeBuiltin Paarka.startSale $ Paarka.SaleParams saleparams
+    Buy       sale amount buyer -> SomeBuiltin $ Paarka.buy $ Sale sale $ Integer amount $ PubKeyHash buyer
 
 handlers :: SimulatorEffectHandlers (Builtin PaarkaContracts)
 handlers =
