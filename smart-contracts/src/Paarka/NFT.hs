@@ -76,10 +76,13 @@ mint tn = do
 
 
 
+
 endpoints :: Contract () NFTSchema Text ()
-endpoints = mint' >> endpoints 
+endpoints = forever
+        $ handleError logError
+        $ awaitPromise mint'
   where
-    mint' = endpoint @"mint" >>= mint
+    mint' = endpoint @"mint" mint
 
 mkSchemaDefinitions ''NFTSchema
 
