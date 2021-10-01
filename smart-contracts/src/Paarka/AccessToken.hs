@@ -62,7 +62,7 @@ nftTokenSymbol :: Sale -> CurrencySymbol
 nftTokenSymbol = scriptCurrencySymbol . nftTokenPolicy
 
 -- | Offchain code
-
+-- Testing purposes
 type MintAccessTokenSchema = Endpoint "mint" Sale
 
 mint :: Sale   -> Contract w MintAccessTokenSchema Text ()

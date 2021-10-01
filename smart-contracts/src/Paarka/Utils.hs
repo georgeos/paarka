@@ -17,7 +17,7 @@ import           GHC.Generics           (Generic)
 import           Ledger                 (PubKeyHash)
 import           Ledger.Value           as Value
 import qualified PlutusTx
-import           Prelude                (Semigroup (..), Show (..))
+import           Prelude                (Show (..))
 import qualified Prelude
 import           Schema                 (ToSchema)
 

@@ -50,26 +50,25 @@ import qualified Prelude
 
 -- | Validator script
 
-data PaarkaRedeemer = Buy PubKeyHash CurrencySymbol CurrencySymbol | SetPrice
+data PaarkaRedeemer = Buy PubKeyHash | SetPrice
     deriving Show
 
 PlutusTx.unstableMakeIsData ''PaarkaRedeemer
 
 -- | Validator
 -- Validations TODO
--- Buy: not sure about Buy Redeemer, maybe there could be a security issue.
 -- SetPrice:
 -- Close:
 -- - Owner has NFT in output
 {-# INLINABLE paarkaValidator #-}
-paarkaValidator :: Sale -> PubKeyHash -> () -> PaarkaRedeemer -> ScriptContext -> Bool
-paarkaValidator sale pkhPaarka _ r ctx = traceIfFalse "Not signed by Paarka" checkSignature &&
+paarkaValidator :: CurrencySymbol -> CurrencySymbol -> Sale -> PubKeyHash -> () -> PaarkaRedeemer -> ScriptContext -> Bool
+paarkaValidator paarka accessToken sale pkhPaarka _ r ctx = traceIfFalse "Not signed by Paarka" checkSignature &&
     case r of
-        Buy buyer paarka accessToken ->
+        Buy buyer ->
             traceIfFalse "token missing from input"                 (hasNFT ownInput) &&
             traceIfFalse "token missing from output"                (hasNFT ownOutput) &&
-            traceIfFalse "access token missing from buyer"          (accessTokenToBuyer buyer accessToken) &&
-            traceIfFalse "access token missing from buyer"          (paarkaSpent paarka < paarkaProduced paarka)
+            traceIfFalse "access token missing from buyer"          (accessTokenToBuyer buyer) &&
+            traceIfFalse "access token missing from buyer"          (paarkaSpent < paarkaProduced)
         SetPrice -> traceIfFalse "Second version" True
     where
         info :: TxInfo
@@ -91,14 +90,14 @@ paarkaValidator sale pkhPaarka _ r ctx = traceIfFalse "Not signed by Paarka" che
         hasNFT :: TxOut -> Bool
         hasNFT txOut = assetClassValueOf (txOutValue txOut ) (assetClass (currency sale) (token sale)) == 1
 
-        accessTokenToBuyer :: PubKeyHash -> CurrencySymbol -> Bool
-        accessTokenToBuyer buyer accessToken = assetClassValueOf (valuePaidTo info buyer) (assetClass accessToken (token sale)) == 1
+        accessTokenToBuyer :: PubKeyHash -> Bool
+        accessTokenToBuyer buyer = assetClassValueOf (valuePaidTo info buyer) (assetClass accessToken (token sale)) == 1
 
-        paarkaSpent :: CurrencySymbol -> Integer
-        paarkaSpent paarka =  assetClassValueOf (valueSpent info) (assetClass paarka (TokenName "PaarkaCoin"))
+        paarkaSpent :: Integer
+        paarkaSpent = assetClassValueOf (valueSpent info) (assetClass paarka (TokenName "PaarkaCoin"))
 
-        paarkaProduced :: CurrencySymbol -> Integer
-        paarkaProduced paarka =  assetClassValueOf (valueProduced info) (assetClass paarka (TokenName "PaarkaCoin"))
+        paarkaProduced :: Integer
+        paarkaProduced = assetClassValueOf (valueProduced info) (assetClass paarka (TokenName "PaarkaCoin"))
 
 data Paarka
 instance Scripts.ValidatorTypes Paarka where
@@ -108,8 +107,11 @@ instance Scripts.ValidatorTypes Paarka where
 typedValidator :: Sale -> Scripts.TypedValidator Paarka
 typedValidator sale = Scripts.mkTypedValidator @Paarka
         ($$(PlutusTx.compile [|| paarkaValidator ||])
+            `PlutusTx.applyCode` PlutusTx.liftCode paarkaSymbol
+            `PlutusTx.applyCode` PlutusTx.liftCode (nftTokenSymbol sale)
             `PlutusTx.applyCode` PlutusTx.liftCode sale
-            `PlutusTx.applyCode` PlutusTx.liftCode paarkaPkh)
+            `PlutusTx.applyCode` PlutusTx.liftCode paarkaPkh
+        )
         $$(PlutusTx.compile [|| wrap ||])
     where
         wrap = Scripts.wrapValidator @() @PaarkaRedeemer
@@ -179,7 +181,7 @@ buy sale amount buyer = do
                           Constraints.mustPayToPubKey (owner sale) paarka <>
                           Constraints.mustMintValue val <>
                           Constraints.mustPayToPubKey buyer val <>
-                          Constraints.mustSpendScriptOutput oref (Redeemer $ PlutusTx.toBuiltinData $ Buy buyer paarkaSymbol (nftTokenSymbol sale)) <>
+                          Constraints.mustSpendScriptOutput oref (Redeemer $ PlutusTx.toBuiltinData $ Buy buyer) <>
                           Constraints.mustPayToOtherScript (valHash sale) (Datum $ PlutusTx.toBuiltinData ()) (txOutValue $ toTxOut o)
             ledgerTx <- submitTxConstraintsWith @Paarka lookups tx
             awaitTxConfirmed $ txId ledgerTx

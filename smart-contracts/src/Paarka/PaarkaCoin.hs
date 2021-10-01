@@ -62,7 +62,7 @@ paarkaSymbol ::  CurrencySymbol
 paarkaSymbol = scriptCurrencySymbol paarkaPolicy
 
 -- | Offchain code
-
+-- Testing purposes
 type MintPaarkaSchema = Endpoint "mintPaarka" Integer
 
 mintPaarka :: Integer -> Contract w MintPaarkaSchema Text ()

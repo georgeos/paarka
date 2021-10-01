@@ -8,7 +8,6 @@ module Paarka.PAB
 import           Data.Aeson                (FromJSON, ToJSON)
 import           Data.Text.Prettyprint.Doc (Pretty (..), viaShow)
 import           GHC.Generics              (Generic)
-import           Ledger                    (CurrencySymbol, TokenName, PubKeyHash)
 
 data PaarkaContracts = StartSale
                      | Buy
