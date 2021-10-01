@@ -12,6 +12,6 @@ Distributors and content creators lack good solutions to market, monetize their 
 ### Solution
 Digital files encrypted and licensed via NFT tokens to protect the files from piracy. The NFT tokens can be bought sold and transferred securely as well as gamified to increase engagement. Smart contract affiliate links provide a way to engage marketing partners. Decentralized marketplaces remove middlemen and allow trading of these digital assets.
 
-### Structure visualization
-<img src="./docs/high-level-concept.jpg" width="500">
+### Architecture
+<img src="./docs/high-level-concept.png" width="500">
 [edit](https://docs.google.com/presentation/d/1-XHiG_ojCZpwFK9q5MCR0JgzcQWZYFpAgp6rBuORGXU/edit?usp=sharing)
