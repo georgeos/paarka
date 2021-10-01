@@ -10,8 +10,10 @@
 {-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module Week05.NFT where
-
+module Paarka.NFT where
+import           Codec.Serialise
+import qualified Data.ByteString.Lazy as LBS
+import qualified Data.ByteString.Short as SBS
 import           Control.Monad          hiding (fmap)
 import qualified Data.Map               as Map
 import           Data.Text              (Text)
@@ -43,7 +45,7 @@ mkPolicy oref tn () ctx = traceIfFalse "UTxO not consumed"   hasUTxO           &
     hasUTxO = any (\i -> txInInfoOutRef i == oref) $ txInfoInputs info
 
     checkMintedAmount :: Bool
-    checkMintedAmount = case flattenValue (txInfoForge info) of
+    checkMintedAmount = case flattenValue (txInfoMint info) of
         [(cs, tn', amt)] -> cs  == ownCurrencySymbol ctx && tn' == tn && amt == 1
         _                -> False
 
@@ -63,7 +65,7 @@ type NFTSchema = Endpoint "mint" TokenName
 mint :: TokenName -> Contract w NFTSchema Text ()
 mint tn = do
     pk    <- Contract.ownPubKey
-    utxos <- utxoAt (pubKeyAddress pk)
+    utxos <- utxosAt (pubKeyAddress pk)
     case Map.keys utxos of
         []       -> Contract.logError @String "no utxo found"
         oref : _ -> do
@@ -74,16 +76,12 @@ mint tn = do
             void $ awaitTxConfirmed $ txId ledgerTx
             Contract.logInfo @String $ printf "forged %s" (show val)
 
-
-
-
 endpoints :: Contract () NFTSchema Text ()
 endpoints = forever
-        $ handleError logError
-        $ awaitPromise mint'
-  where
-    mint' = endpoint @"mint" mint
-
+     $ handleError logError
+     $ awaitPromise mint'
+     where
+     mint' = endpoint @"mint" mint
 mkSchemaDefinitions ''NFTSchema
 
 mkKnownCurrencies []
