@@ -10,10 +10,10 @@
 {-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module Paarka.NFT where
-import           Codec.Serialise
-import qualified Data.ByteString.Lazy as LBS
-import qualified Data.ByteString.Short as SBS
+module Paarka.NFT (
+    testNFT
+) where
+
 import           Control.Monad          hiding (fmap)
 import qualified Data.Map               as Map
 import           Data.Text              (Text)
@@ -26,9 +26,6 @@ import           Ledger                 hiding (mint, singleton)
 import           Ledger.Constraints     as Constraints
 import qualified Ledger.Typed.Scripts   as Scripts
 import           Ledger.Value           as Value
-import           Playground.Contract    (printJson, printSchemas, ensureKnownCurrencies, stage, ToSchema)
-import           Playground.TH          (mkKnownCurrencies, mkSchemaDefinitions)
-import           Playground.Types       (KnownCurrency (..))
 import           Prelude                (IO, Semigroup (..), Show (..), String)
 import           Text.Printf            (printf)
 import           Wallet.Emulator.Wallet
@@ -82,12 +79,9 @@ endpoints = forever
      $ awaitPromise mint'
      where
      mint' = endpoint @"mint" mint
-mkSchemaDefinitions ''NFTSchema
 
-mkKnownCurrencies []
-
-test :: IO ()
-test = runEmulatorTraceIO $ do
+testNFT :: IO ()
+testNFT = runEmulatorTraceIO $ do
     let tn = "ABC"
     h1 <- activateContractWallet (Wallet 1) endpoints
     h2 <- activateContractWallet (Wallet 2) endpoints
