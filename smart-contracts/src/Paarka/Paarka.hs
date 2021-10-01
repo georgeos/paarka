@@ -15,10 +15,9 @@
 module Paarka.Paarka (
     runPaarka,
     SaleParams(..),
-    StartSaleSchema,
-    SaleSchema,
-    startSale,
-    buy
+    StartSaleSchema, BuySchema,
+    startSale, buy,
+    startSaleEndpoint, buyEndpoints
 ) where
 
 import           Paarka.Utils           (paarkaPkh, Sale(..))
@@ -40,6 +39,8 @@ import           Plutus.Contract        as Contract
 import           Plutus.Trace.Emulator  as Emulator
 import qualified PlutusTx
 import           PlutusTx.Prelude       hiding (Semigroup(..), unless)
+import           Schema                 (ToSchema)
+
 import           Text.Printf            (printf)
 import           Wallet.Emulator.Wallet
 import           Prelude                (Semigroup (..), Show (..), String, (<>), IO)
@@ -129,7 +130,13 @@ paarkaAddress = scriptAddress . validator
 data SaleParams = SaleParams {
      sCurrency :: !CurrencySymbol
     ,sToken    :: !TokenName
-} deriving (Show, Generic, FromJSON, ToJSON, Prelude.Eq, Prelude.Ord)
+} deriving (Show, Generic, FromJSON, ToJSON, ToSchema, Prelude.Eq, Prelude.Ord)
+
+data BuyParams = BuyParams {
+     nftSale  :: !Sale
+    ,amt      :: !Integer
+    ,buyerPKH :: !PubKeyHash
+} deriving (Show, Generic, FromJSON, ToJSON, ToSchema, Prelude.Eq, Prelude.Ord)
 
 startSale :: forall w s. SaleParams -> Contract w s Text ()
 startSale sp = do
@@ -157,7 +164,7 @@ findSale sale = do
 
 buy :: Sale -> Integer -> PubKeyHash -> Contract w s Text ()
 buy sale amount buyer = do
-    m   <- findSale sale
+    m <- findSale sale
     case m of
         Nothing      -> Contract.logInfo @String $ printf "sale not found"
         Just(oref, o)-> do
@@ -182,26 +189,24 @@ buy sale amount buyer = do
 -- | Endpoints
 
 -- | StartSale
-type StartSaleSchema =
-    Endpoint "start" (CurrencySymbol, TokenName)
+type StartSaleSchema = Endpoint "start" SaleParams
 
-startEndpoint :: Contract (Last SaleParams) StartSaleSchema Text ()
-startEndpoint = forever
+startSaleEndpoint :: Contract (Last SaleParams) StartSaleSchema Text ()
+startSaleEndpoint = forever
               $ handleError logError
               $ awaitPromise start'
     where
-        start' = endpoint @"start" $ \(cs, tn) -> startSale SaleParams{ sCurrency= cs, sToken=tn }
+        start' = endpoint @"start" $ \sp -> startSale sp
 
 -- | Sale
-type SaleSchema =
-    Endpoint "buy" (Integer, PubKeyHash)
+type BuySchema = Endpoint "buy" BuyParams
 
-saleEndpoints :: Sale -> Contract () SaleSchema Text ()
-saleEndpoints sale = forever
+buyEndpoints :: Contract () BuySchema Text ()
+buyEndpoints = forever
             $ handleError logError
             $ awaitPromise buy'
     where
-        buy' = endpoint @"buy" $ uncurry (buy sale)
+        buy' = endpoint @"buy" $ \bp -> buy (nftSale bp) (amt bp) (buyerPKH bp)
 
 -- | Trace
 
@@ -233,16 +238,16 @@ emCfg = EmulatorConfig (Left $ Map.fromList [( Wallet w,
 
 tracePaarka :: EmulatorTrace ()
 tracePaarka = do
-    h2 <- activateContractWallet (Wallet 2) startEndpoint
+    h2 <- activateContractWallet (Wallet 2) startSaleEndpoint
     let saleOwner = pubKeyHash $ walletPubKey $ Wallet 2
         buyer3 = pubKeyHash $ walletPubKey $ Wallet 3
         buyer4 = pubKeyHash $ walletPubKey $ Wallet 4
-    callEndpoint @"start" h2 (csNFT, tnNFT)
+    callEndpoint @"start" h2 SaleParams{sCurrency=csNFT, sToken=tnNFT}
     void $ Emulator.waitNSlots 2
-    h1 <- activateContractWallet (Wallet 1) $ saleEndpoints Sale{ currency=csNFT, token=tnNFT, owner=saleOwner }
-    callEndpoint @"buy" h1 (10, buyer3)
+    h1 <- activateContractWallet (Wallet 1) $ buyEndpoints
+    callEndpoint @"buy" h1  BuyParams{ nftSale=Sale{ currency=csNFT, token=tnNFT, owner=saleOwner }, amt=10, buyerPKH=buyer3}
     void $ Emulator.waitNSlots 1
-    callEndpoint @"buy" h1 (10, buyer4)
+    callEndpoint @"buy" h1  BuyParams{ nftSale=Sale{ currency=csNFT, token=tnNFT, owner=saleOwner }, amt=10, buyerPKH=buyer4}
     void $ Emulator.waitNSlots 1
 
 runPaarka :: IO ()

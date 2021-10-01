@@ -19,12 +19,13 @@ import           Ledger.Value           as Value
 import qualified PlutusTx
 import           Prelude                (Semigroup (..), Show (..))
 import qualified Prelude
+import           Schema                 (ToSchema)
 
 data Sale = Sale
     { owner     :: !PubKeyHash
     , currency  :: !CurrencySymbol
     , token     :: !TokenName
-    } deriving (Show, Generic, FromJSON, ToJSON, Prelude.Eq, Prelude.Ord)
+    } deriving (Show, Generic, FromJSON, ToJSON, ToSchema, Prelude.Eq, Prelude.Ord)
 
 PlutusTx.makeLift ''Sale
 

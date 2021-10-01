@@ -1,4 +1,4 @@
-<img src="./paarka.png" width="500">
+<img src="./docs/paarka.png" width="500">
 
 ## Publish anywhere, grow everywhere
 
@@ -11,6 +11,9 @@ Distributors and content creators lack good solutions to market, monetize their 
 
 ### Solution
 Digital files encrypted and licensed via NFT tokens to protect the files from piracy. The NFT tokens can be bought sold and transferred securely as well as gamified to increase engagement. Smart contract affiliate links provide a way to engage marketing partners. Decentralized marketplaces remove middlemen and allow trading of these digital assets.
+
+### PAB
+check file [Postman collection](./docs/Paarka.postman_collection.json)
 
 ### Architecture
 <img src="./docs/high-level-concept.png" width="500">

@@ -15,7 +15,6 @@ library
                      , Paarka.AccessToken
                      , Paarka.Utils
                      , Paarka.NFT
-                     , Paarka.PAB
     build-depends:     aeson
                      , base ^>=4.14.1.0
                      , containers
@@ -49,4 +48,5 @@ executable paarka-pab
                      , plutus-use-cases
                      , plutus-tx
                      , purescript-bridge
+                     , prettyprinter ^>=1.7.0
                      , text

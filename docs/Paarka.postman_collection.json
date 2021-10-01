@@ -1,0 +1,92 @@
+{
+	"info": {
+		"_postman_id": "8c684d3f-0fdd-4867-ad98-1b85e3738474",
+		"name": "Paarka",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "healthcheck",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:9080/api/healthcheck",
+					"host": [
+						"localhost"
+					],
+					"port": "9080",
+					"path": [
+						"api",
+						"healthcheck"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Activate Contract",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"caID\": \"StartSale\",\n\t\"caWallet\": { \"getWallet\": 1 }\n}\n"
+				},
+				"url": {
+					"raw": "localhost:9080/api/contract/activate/",
+					"host": [
+						"localhost"
+					],
+					"port": "9080",
+					"path": [
+						"api",
+						"contract",
+						"activate",
+						""
+					]
+				},
+				"description": "This activares the `StartSale` contract and return contract id. Use this contract id for instance apis"
+			},
+			"response": []
+		},
+		{
+			"name": "Call start endpoint",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"sCurrency\": {\"unCurrencySymbol\": \"aa\"}, \n\t\"sToken\":{\"unTokenName\":\"A\"}\n}\n"
+				},
+				"url": {
+					"raw": "localhost:9080/api/contract/instance/610f7484-1689-408f-8f33-85c5f6282e1a/endpoint/start",
+					"host": [
+						"localhost"
+					],
+					"port": "9080",
+					"path": [
+						"api",
+						"contract",
+						"instance",
+						"610f7484-1689-408f-8f33-85c5f6282e1a",
+						"endpoint",
+						"start"
+					]
+				},
+				"description": "Get the contract id from activate contract and use that to call start"
+			},
+			"response": []
+		}
+	]
+}
