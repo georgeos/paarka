@@ -246,16 +246,3 @@ tracePaarka = do
 
 runPaarka :: IO ()
 runPaarka = runEmulatorTraceIO' def emCfg tracePaarka
-
-
--- runPaarkaPab :: OracleParams -> Contract (Last Oracle) OracleSchema DataText.Text ()
--- runPaarkaPab op = do
---     oracle <- startOracle op
---     tell $ Last $ Just oracle
---     go oracle
---   where
---     go :: Oracle -> Contract (Last Oracle) OracleSchema DataText.Text a
---     go oracle = do
---         x <- endpoint @"update"
---         updateOracle oracle x
---         go oracle
