@@ -40,9 +40,10 @@ import           Plutus.Contract        as Contract
 import           Plutus.Trace.Emulator  as Emulator
 import qualified PlutusTx
 import           PlutusTx.Prelude       hiding (Semigroup(..), unless)
-import           Prelude                (IO, Show (..), String, (<>))
 import           Text.Printf            (printf)
 import           Wallet.Emulator.Wallet
+import           Prelude                (Semigroup (..), Show (..), String, (<>), IO)
+import qualified Prelude
 
 -- | Onchain code
 
@@ -128,7 +129,7 @@ paarkaAddress = scriptAddress . validator
 data SaleParams = SaleParams {
      sCurrency :: !CurrencySymbol
     ,sToken    :: !TokenName
-} deriving (Show, Generic, FromJSON, ToJSON)
+} deriving (Show, Generic, FromJSON, ToJSON, Prelude.Eq, Prelude.Ord)
 
 startSale :: forall w s. SaleParams -> Contract w s Text ()
 startSale sp = do
