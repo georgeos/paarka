@@ -26,91 +26,58 @@ import           Data.Text                           (Text, pack)
 import           Ledger
 import           Ledger.Constraints
 import qualified Ledger.Value                        as Value
+import           Playground.Types                    (FunctionSchema)
 import           Plutus.Contract
 import           Plutus.PAB.Effects.Contract         (ContractEffect (..))
-import           Plutus.PAB.Effects.Contract.Builtin (Builtin, SomeBuiltin (..), endpointsToSchemas, handleBuiltin)
+import           Plutus.PAB.Effects.Contract.Builtin (Builtin, BuiltinHandler (..), HasDefinitions (..), SomeBuiltin (..))
+import qualified Plutus.PAB.Effects.Contract.Builtin as Builtin
 import           Plutus.PAB.Monitoring.PABLogMsg     (PABMultiAgentMsg)
 import           Plutus.PAB.Simulator                (SimulatorEffectHandlers)
 import qualified Plutus.PAB.Simulator                as Simulator
 import           Plutus.PAB.Types                    (PABError (..))
+import           Plutus.PAB.Run                      (runWith)
 import qualified Plutus.PAB.Webserver.Server         as PAB.Server
 import qualified Plutus.Contracts.Currency           as Currency
-
+import           PlutusTx.Prelude                    hiding (Semigroup(..), unless)
 import           Wallet.Emulator.Types               (Wallet (..), walletPubKey)
 import           Wallet.Types                        (ContractInstanceId (..))
-
 import qualified Paarka.Paarka                       as Paarka
+import           Paarka.Utils                        (paarkaPkh, Sale(..))
 import           Paarka.PAB                          (PaarkaContracts (..))
+import           Schema                              (FormSchema)
 
+-- | PAB has changed from lesson 06
+-- There is an example in plutus repo: plutus/plutus-pab/examples/ContractExample.hs
+-- In someway we have to (similar to oracle-pab):
+--  - Mint one NFT
+--  - Create the Sale using one Wallet
+-- Regarding to lesson 6 (2:09:00), paarka-client.hs shouldn't necessary because this paarka-pab should start PAB Web Server
+-- Regarding to lesson 6 (2:04:00), we dont need to activateContracts because we can do it from the "web server" using HTTP requests
 main :: IO ()
-main = void $ Simulator.runSimulationWith handlers $ do
-    Simulator.logString @(Builtin PaarkaContracts) "Starting Paarka PAB webserver. Press enter to exit."
-    shutdown <- PAB.Server.startServerDebug
+main = do
+    runWith (Builtin.handleBuiltin @PaarkaContracts)
 
-    cidInit <- Simulator.activateContract (Wallet 1) Init
-    cs      <- waitForLast cidInit
-    _       <- Simulator.waitUntilFinished cidInit
+-- | StartSale and Buy must have parameters because getPaarkaContractsSchema and getPaarkaContracts
+-- I think there should be an additional Definition like: Init (similar to oracle-pab) in order to initialize wallets
+instance HasDefinitions PaarkaContracts where
+    getDefinitions = [ StartSale
+                     , Buy
+                     ]
+    getContract = getPaarkaContracts
+    getSchema = getPaarkaContractsSchema
 
-    cidPaarka <- Simulator.activateContract (Wallet 1) $ Sale cs
-    liftIO $ writeFile "paarka.cid" $ show $ unContractInstanceId cidPaarka
-    paarka <- waitForLast cidPaarka
+-- | StartSale and Buy must have parameters
+getPaarkaContractsSchema :: PaarkaContracts -> [FunctionSchema FormSchema]
+getPaarkaContractsSchema = \case
+    StartSale -> Builtin.endpointsToSchemas @Paarka.StartSaleSchema
+    Buy       -> Builtin.endpointsToSchemas @Paarka.SaleSchema
 
-    void $ liftIO getLine
-    shutdown
-
-waitForLast :: FromJSON a => ContractInstanceId -> Simulator.Simulation t a
-waitForLast cid =
-    flip Simulator.waitForState cid $ \json -> case fromJSON json of
-        Success (Last (Just x)) -> Just x
-        _                       -> Nothing
-
-wallets :: [Wallet]
-wallets = [Wallet i | i <- [1 .. 5]]
-
-usdt :: TokenName
-usdt = "USDT"
-
-saleParams :: CurrencySymbol -> Sale.SaleParams
-saleParams cs = Sale.SaleParams
-    { Sale.opFees   = 1_000_000
-    , Sale.opSymbol = cs
-    , Sale.opToken  = usdt
-    }
-
-handlePaarkaContracts ::
-    ( Member (Error PABError) effs
-    , Member (LogMsg (PABMultiAgentMsg (Builtin PaarkaContracts))) effs
-    )
-    => ContractEffect (Builtin PaarkaContracts)
-    ~> Eff effs
-handlePaarkaContracts = handleBuiltin getSchema getContract where
-    getSchema = \case
-        Init    -> endpointsToSchemas @Empty
-        Sale _  -> endpointsToSchemas @Sale.SaleSchema
-    getContract = \case
-        Init    -> SomeBuiltin   initContract
-        Sale cs -> SomeBuiltin $ Paarka.runSale $ saleParams cs
+-- | StartSale and Buy must have parameters to pass into Paarka.startSale and Paarka.buy contracts 
+getPaarkaContracts :: PaarkaContracts -> SomeBuiltin
+getPaarkaContracts = \case
+    StartSale -> SomeBuiltin Paarka.startSale
+    Buy       -> SomeBuiltin Paarka.buy
 
 handlers :: SimulatorEffectHandlers (Builtin PaarkaContracts)
 handlers =
-    Simulator.mkSimulatorHandlers @(Builtin PaarkaContracts) def []
-    $ interpret handlePaarkaContracts
-
-initContract :: Contract (Last CurrencySymbol) Empty Text ()
-initContract = do
-    ownPK <- pubKeyHash <$> ownPubKey
-    cur   <-
-        mapError (pack . show)
-        (Currency.mintContract ownPK [(usdt, fromIntegral (length wallets) * amount)]
-        :: Contract (Last CurrencySymbol) Empty Currency.CurrencyError Currency.OneShotCurrency)
-    let cs = Currency.currencySymbol cur
-        v  = Value.singleton cs usdt amount
-    forM_ wallets $ \w -> do
-        let pkh = pubKeyHash $ walletPubKey w
-        when (pkh /= ownPK) $ do
-            tx <- submitTx $ mustPayToPubKey pkh v
-            awaitTxConfirmed $ txId tx
-    tell $ Last $ Just cs
-  where
-    amount :: Integer
-    amount = 100_000_000
+    Simulator.mkSimulatorHandlers def def (interpret (contractHandler Builtin.handleBuiltin))

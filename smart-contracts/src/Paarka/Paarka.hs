@@ -13,7 +13,12 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Paarka.Paarka (
-    runPaarka
+    runPaarka,
+    SaleParams(..),
+    StartSaleSchema,
+    SaleSchema,
+    startSale,
+    buy
 ) where
 
 import           Paarka.Utils           (paarkaPkh, Sale(..))

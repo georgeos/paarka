@@ -8,3 +8,7 @@
     2. ```import Wallet.Emulator```
     3. ```pubKeyHash $ walletPubKey $ Wallet 1```
 3. ```runPaaarka```
+
+## PAB
+
+1. ```cabal run paarka-pab```
