@@ -155,10 +155,11 @@ startSale sp = do
     logInfo @String $ printf "sale started for token %s" (show sale)
     return sale
 
-findPkh :: Contract w s Text ()
+findPkh :: forall w s. Contract w s Text PubKeyHash
 findPkh = do
     pkh   <- pubKeyHash <$> Contract.ownPubKey
     logInfo @String $ printf "pubkeyhash is %s" (show pkh)
+    return pkh
 
 findSale :: Sale -> Contract w s Text (Maybe (TxOutRef, ChainIndexTxOut))
 findSale sale = do
@@ -210,17 +211,29 @@ startSaleEndpoint = forever
 
 -- | BuySchema
 -- | find-pkh Temporal function to find the PubKeyHash. Should return a PubKeyHash in the HTTP request
-type BuySchema = 
-        Endpoint "buy" BuyParams
-    .\/ Endpoint "find-pkh" ()
+type BuySchema = Endpoint "buy" BuyParams
 
 buyEndpoints :: Contract () BuySchema Text ()
 buyEndpoints = forever
             $ handleError logError
-            $ awaitPromise $ buy' `select` findPkh'
+            $ awaitPromise buy'
     where
         buy' = endpoint @"buy" $ \bp -> buy (nftSale bp) (amt bp) (buyerPkh bp)
-        findPkh' = endpoint @"find-pkh" $ const findPkh
+
+-- | BuySchema
+-- | find-pkh Temporal function to find the PubKeyHash. Should return a PubKeyHash in the HTTP request
+type FindSchema = Endpoint "find-pkh" ()
+
+findEndpoints :: Contract (Last PubKeyHash) FindSchema Text ()
+findEndpoints = forever
+            $ handleError logError
+            $ awaitPromise findPkh'
+    where
+        findPkh' :: Contract (Last PubKeyHash) FindSchema Text ()
+        findPkh' = do
+            endpoint @"find-pkh"
+            pkh <- findPkh
+            tell $ Last $ Just pkh
 
 -- | Trace
 
