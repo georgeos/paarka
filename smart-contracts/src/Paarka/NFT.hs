@@ -11,28 +11,34 @@
 {-# LANGUAGE TypeOperators       #-}
 
 module Paarka.NFT (
-    testNFT
+    NFTSchema,
+    nftEndpoint,
+    nftTrace,
 ) where
 
 import           Control.Monad          hiding (fmap)
 import qualified Data.Map               as Map
 import           Data.Text              (Text)
 import           Data.Void              (Void)
-import           Plutus.Contract        as Contract
-import           Plutus.Trace.Emulator  as Emulator
-import qualified PlutusTx
-import           PlutusTx.Prelude       hiding (Semigroup(..), unless)
 import           Ledger                 hiding (mint, singleton)
 import           Ledger.Constraints     as Constraints
 import qualified Ledger.Typed.Scripts   as Scripts
 import           Ledger.Value           as Value
+import           Plutus.Contract        as Contract
+import           Plutus.Trace.Emulator  as Emulator
+import qualified PlutusTx
+import           PlutusTx.Prelude       hiding (Semigroup(..), unless)
 import           Prelude                (IO, Semigroup (..), Show (..), String)
 import           Text.Printf            (printf)
 import           Wallet.Emulator.Wallet
 
-{-# INLINABLE mkPolicy #-}
-mkPolicy :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
-mkPolicy oref tn () ctx = traceIfFalse "UTxO not consumed"   hasUTxO           &&
+-- | Onchain code
+
+-- | Minting policy
+
+{-# INLINABLE nftPolicy #-}
+nftPolicy :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
+nftPolicy oref tn () ctx = traceIfFalse "UTxO not consumed"   hasUTxO           &&
                           traceIfFalse "wrong amount minted" checkMintedAmount
   where
     info :: TxInfo
@@ -48,7 +54,7 @@ mkPolicy oref tn () ctx = traceIfFalse "UTxO not consumed"   hasUTxO           &
 
 policy :: TxOutRef -> TokenName -> Scripts.MintingPolicy
 policy oref tn = mkMintingPolicyScript $
-    $$(PlutusTx.compile [|| \oref' tn' -> Scripts.wrapMintingPolicy $ mkPolicy oref' tn' ||])
+    $$(PlutusTx.compile [|| \oref' tn' -> Scripts.wrapMintingPolicy $ nftPolicy oref' tn' ||])
     `PlutusTx.applyCode`
     PlutusTx.liftCode oref
     `PlutusTx.applyCode`
@@ -57,10 +63,12 @@ policy oref tn = mkMintingPolicyScript $
 curSymbol :: TxOutRef -> TokenName -> CurrencySymbol
 curSymbol oref tn = scriptCurrencySymbol $ policy oref tn
 
-type NFTSchema = Endpoint "mint" TokenName
+-- | Offchain code
 
-mint :: TokenName -> Contract w NFTSchema Text ()
-mint tn = do
+type NFTSchema = Endpoint "mint-nft" TokenName
+
+mintNFT :: TokenName -> Contract w NFTSchema Text ()
+mintNFT tn = do
     pk    <- Contract.ownPubKey
     utxos <- utxosAt (pubKeyAddress pk)
     case Map.keys utxos of
@@ -73,18 +81,20 @@ mint tn = do
             void $ awaitTxConfirmed $ txId ledgerTx
             Contract.logInfo @String $ printf "forged %s" (show val)
 
-endpoints :: Contract () NFTSchema Text ()
-endpoints = forever
+nftEndpoint :: Contract () NFTSchema Text ()
+nftEndpoint = forever
      $ handleError logError
      $ awaitPromise mint'
      where
-     mint' = endpoint @"mint" mint
+     mint' = endpoint @"mint-nft" $ \tn -> mintNFT tn
 
-testNFT :: IO ()
-testNFT = runEmulatorTraceIO $ do
+-- Testing purposes
+
+nftTrace :: IO ()
+nftTrace = runEmulatorTraceIO $ do
     let tn = "ABC"
-    h1 <- activateContractWallet (Wallet 1) endpoints
-    h2 <- activateContractWallet (Wallet 2) endpoints
-    callEndpoint @"mint" h1 tn
-    callEndpoint @"mint" h2 tn
+    h1 <- activateContractWallet (Wallet 1) nftEndpoint
+    h2 <- activateContractWallet (Wallet 2) nftEndpoint
+    callEndpoint @"mint-nft" h1 tn
+    callEndpoint @"mint-nft" h2 tn
     void $ Emulator.waitNSlots 1

@@ -35,10 +35,9 @@ import           Plutus.PAB.Simulator                (SimulatorEffectHandlers)
 import qualified Plutus.PAB.Simulator                as Simulator
 import qualified Plutus.PAB.Webserver.Server         as PAB.Server
 import           Plutus.PAB.Run.PSGenerator          (HasPSTypes (..))
-
 import           Schema                              (FormSchema)
-
 import qualified Paarka.Paarka                       as Paarka
+import qualified Paarka.NFT                          as NFT
 
 
 
@@ -62,8 +61,8 @@ main = void $ Simulator.runSimulationWith handlers $ do
 
     shutdown
 
-
-data PaarkaContracts = StartSale
+data PaarkaContracts = MintNFT
+                     | StartSale
                      | Buy
     deriving (Eq, Ord, Show, Generic, FromJSON, ToJSON)
 
@@ -82,19 +81,21 @@ instance HasPSTypes PaarkaContracts where
 -- | StartSale and Buy must have parameters because getPaarkaContractsSchema and getPaarkaContracts
 -- I think there should be an additional Definition like: Init (similar to oracle-pab) in order to initialize wallets
 instance HasDefinitions PaarkaContracts where
-    getDefinitions = [StartSale, Buy]
+    getDefinitions = [MintNFT, StartSale, Buy]
     getContract = getPaarkaContracts
     getSchema = getPaarkaContractsSchema
 
 -- | StartSale and Buy must have parameters
 getPaarkaContractsSchema :: PaarkaContracts -> [FunctionSchema FormSchema]
 getPaarkaContractsSchema = \case
+    MintNFT   -> Builtin.endpointsToSchemas @NFT.NFTSchema
     StartSale -> Builtin.endpointsToSchemas @Paarka.StartSaleSchema
     Buy       -> Builtin.endpointsToSchemas @Paarka.BuySchema
 
 -- | StartSale and Buy must have parameters to pass into Paarka.startSale and Paarka.buy contracts
 getPaarkaContracts :: PaarkaContracts -> SomeBuiltin
 getPaarkaContracts = \case
+    MintNFT   -> SomeBuiltin $ NFT.nftEndpoint
     StartSale -> SomeBuiltin $ Paarka.startSaleEndpoint
     Buy       -> SomeBuiltin $ Paarka.buyEndpoints
 
