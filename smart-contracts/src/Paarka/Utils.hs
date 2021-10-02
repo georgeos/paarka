@@ -22,7 +22,7 @@ import qualified Prelude
 import           Schema                 (ToSchema)
 
 data Sale = Sale
-    { owner     :: !PubKeyHash
+    { ownerPkh     :: !PubKeyHash
     , currency  :: !CurrencySymbol
     , token     :: !TokenName
     } deriving (Show, Generic, FromJSON, ToJSON, ToSchema, Prelude.Eq, Prelude.Ord)

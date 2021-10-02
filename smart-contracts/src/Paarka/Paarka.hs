@@ -137,7 +137,7 @@ data SaleParams = SaleParams {
 data BuyParams = BuyParams {
      nftSale  :: !Sale
     ,amt      :: !Integer
-    ,buyerPKH :: !PubKeyHash
+    ,buyerPkh :: !PubKeyHash
 } deriving (Show, Generic, FromJSON, ToJSON, ToSchema, Prelude.Eq, Prelude.Ord)
 
 startSale :: forall w s. SaleParams -> Contract w s Text Sale
@@ -146,7 +146,7 @@ startSale sp = do
     let v = Value.singleton (sCurrency sp) (sToken sp) 1
         tx = mustPayToTheScript () v
         sale = Sale {
-                owner = pkh,
+                ownerPkh = pkh,
                 currency = sCurrency sp,
                 token = sToken sp
             }
@@ -184,7 +184,7 @@ buy sale amount buyer = do
                           Constraints.mintingPolicy paarkaPolicy <>
                           Constraints.mintingPolicy (nftTokenPolicy sale)
                 tx      = Constraints.mustMintValue paarka <>
-                          Constraints.mustPayToPubKey (owner sale) paarka <>
+                          Constraints.mustPayToPubKey (ownerPkh sale) paarka <>
                           Constraints.mustMintValue val <>
                           Constraints.mustPayToPubKey buyer val <>
                           Constraints.mustSpendScriptOutput oref (Redeemer $ PlutusTx.toBuiltinData $ Buy buyer) <>
@@ -219,7 +219,7 @@ buyEndpoints = forever
             $ handleError logError
             $ awaitPromise $ buy' `select` findPkh'
     where
-        buy' = endpoint @"buy" $ \bp -> buy (nftSale bp) (amt bp) (buyerPKH bp)
+        buy' = endpoint @"buy" $ \bp -> buy (nftSale bp) (amt bp) (buyerPkh bp)
         findPkh' = endpoint @"find-pkh" $ const findPkh
 
 -- | Trace
@@ -259,9 +259,9 @@ tracePaarka = do
     callEndpoint @"start" h2 SaleParams{sCurrency=csNFT, sToken=tnNFT}
     void $ Emulator.waitNSlots 2
     h1 <- activateContractWallet (Wallet 1) $ buyEndpoints
-    callEndpoint @"buy" h1  BuyParams{ nftSale=Sale{ currency=csNFT, token=tnNFT, owner=saleOwner }, amt=10, buyerPKH=buyer3}
+    callEndpoint @"buy" h1  BuyParams{ nftSale=Sale{ currency=csNFT, token=tnNFT, ownerPkh=saleOwner }, amt=10, buyerPkh=buyer3}
     void $ Emulator.waitNSlots 1
-    callEndpoint @"buy" h1  BuyParams{ nftSale=Sale{ currency=csNFT, token=tnNFT, owner=saleOwner }, amt=10, buyerPKH=buyer4}
+    callEndpoint @"buy" h1  BuyParams{ nftSale=Sale{ currency=csNFT, token=tnNFT, ownerPkh=saleOwner }, amt=10, buyerPkh=buyer4}
     void $ Emulator.waitNSlots 1
 
 runPaarka :: IO ()

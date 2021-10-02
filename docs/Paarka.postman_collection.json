@@ -1,10 +1,245 @@
 {
 	"info": {
-		"_postman_id": "8c684d3f-0fdd-4867-ad98-1b85e3738474",
+		"_postman_id": "96ca8321-e12e-4932-aee6-ae8547a4c488",
 		"name": "Paarka",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
+		{
+			"name": "Mint NFT",
+			"item": [
+				{
+					"name": "Activate Mint NFT Contract",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"caID\": \"MintNFT\",\n\t\"caWallet\": { \"getWallet\": 2 }\n}\n"
+						},
+						"url": {
+							"raw": "localhost:9080/api/contract/activate/",
+							"host": [
+								"localhost"
+							],
+							"port": "9080",
+							"path": [
+								"api",
+								"contract",
+								"activate",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Mint NFT",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"unTokenName\":\"A\"\n}\n"
+						},
+						"url": {
+							"raw": "localhost:9080/api/contract/instance/4464f2c3-c868-4c16-a2a9-c87c832f04db/endpoint/mint-nft",
+							"host": [
+								"localhost"
+							],
+							"port": "9080",
+							"path": [
+								"api",
+								"contract",
+								"instance",
+								"4464f2c3-c868-4c16-a2a9-c87c832f04db",
+								"endpoint",
+								"mint-nft"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Start NFT Sale",
+			"item": [
+				{
+					"name": "Activate StartSale Contract",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"caID\": \"StartSale\",\n\t\"caWallet\": { \"getWallet\": 2 }\n}\n"
+						},
+						"url": {
+							"raw": "localhost:9080/api/contract/activate/",
+							"host": [
+								"localhost"
+							],
+							"port": "9080",
+							"path": [
+								"api",
+								"contract",
+								"activate",
+								""
+							]
+						},
+						"description": "This activares the `StartSale` contract and return contract id. Use this contract id for instance apis"
+					},
+					"response": []
+				},
+				{
+					"name": "StartSale",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"sCurrency\": {\"unCurrencySymbol\": \"b2c19a5d4ffd9de9a0f7d32f8947e9f3c1e3ec931da1147eb34ad04f\"}, \n\t\"sToken\":{\"unTokenName\":\"A\"}\n}\n"
+						},
+						"url": {
+							"raw": "localhost:9080/api/contract/instance/3f04d41d-d86a-4138-9d82-2948ebd731d3/endpoint/start",
+							"host": [
+								"localhost"
+							],
+							"port": "9080",
+							"path": [
+								"api",
+								"contract",
+								"instance",
+								"3f04d41d-d86a-4138-9d82-2948ebd731d3",
+								"endpoint",
+								"start"
+							]
+						},
+						"description": "Get the contract id from activate contract and use that to call start"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Buy NFT",
+			"item": [
+				{
+					"name": "Activate Buy NFT Contract",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"caID\": \"Buy\",\n\t\"caWallet\": { \"getWallet\": 1 }\n}\n"
+						},
+						"url": {
+							"raw": "localhost:9080/api/contract/activate/",
+							"host": [
+								"localhost"
+							],
+							"port": "9080",
+							"path": [
+								"api",
+								"contract",
+								"activate",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Buy",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nftSale\": {\n        \"ownerPkh\": {\n            \"getPubKeyHash\": \"977efb35ab621d39dbeb7274ec7795a34708ff4d25a01a1df04c1f27\"\n        },\n        \"currency\": {\n            \"unCurrencySymbol\": \"b2c19a5d4ffd9de9a0f7d32f8947e9f3c1e3ec931da1147eb34ad04f\"\n        },\n        \"token\": {\n            \"unTokenName\":\"A\"\n        }\n    },\n    \"amt\": 10,\n    \"buyerPkh\": { \n        \"getPubKeyHash\": \"7f8a76c0ebaa4ad20dfdcd51a5de070ab771f4bf377f2c41e6b71c0a\"\n    }\n}\n"
+						},
+						"url": {
+							"raw": "localhost:9080/api/contract/instance/cdbe07e3-8f0f-4502-9461-52a0ce9f06d5/endpoint/buy",
+							"host": [
+								"localhost"
+							],
+							"port": "9080",
+							"path": [
+								"api",
+								"contract",
+								"instance",
+								"cdbe07e3-8f0f-4502-9461-52a0ce9f06d5",
+								"endpoint",
+								"buy"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find PKH",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[]"
+						},
+						"url": {
+							"raw": "localhost:9080/api/contract/instance/2f42a95b-b32a-4167-a255-ef18be1cad8d/endpoint/find-pkh",
+							"host": [
+								"localhost"
+							],
+							"port": "9080",
+							"path": [
+								"api",
+								"contract",
+								"instance",
+								"2f42a95b-b32a-4167-a255-ef18be1cad8d",
+								"endpoint",
+								"find-pkh"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
 		{
 			"name": "healthcheck",
 			"request": {
@@ -25,66 +260,21 @@
 			"response": []
 		},
 		{
-			"name": "Activate Contract",
+			"name": "fullreport",
 			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n\t\"caID\": \"StartSale\",\n\t\"caWallet\": { \"getWallet\": 1 }\n}\n"
-				},
+				"method": "GET",
+				"header": [],
 				"url": {
-					"raw": "localhost:9080/api/contract/activate/",
+					"raw": "localhost:9080/api/fullreport",
 					"host": [
 						"localhost"
 					],
 					"port": "9080",
 					"path": [
 						"api",
-						"contract",
-						"activate",
-						""
+						"fullreport"
 					]
-				},
-				"description": "This activares the `StartSale` contract and return contract id. Use this contract id for instance apis"
-			},
-			"response": []
-		},
-		{
-			"name": "Call start endpoint",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n\t\"sCurrency\": {\"unCurrencySymbol\": \"aa\"}, \n\t\"sToken\":{\"unTokenName\":\"A\"}\n}\n"
-				},
-				"url": {
-					"raw": "localhost:9080/api/contract/instance/610f7484-1689-408f-8f33-85c5f6282e1a/endpoint/start",
-					"host": [
-						"localhost"
-					],
-					"port": "9080",
-					"path": [
-						"api",
-						"contract",
-						"instance",
-						"610f7484-1689-408f-8f33-85c5f6282e1a",
-						"endpoint",
-						"start"
-					]
-				},
-				"description": "Get the contract id from activate contract and use that to call start"
+				}
 			},
 			"response": []
 		}
