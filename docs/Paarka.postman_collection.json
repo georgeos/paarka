@@ -53,7 +53,7 @@
 							"raw": "{\n\t\"unTokenName\":\"A\"\n}\n"
 						},
 						"url": {
-							"raw": "localhost:9080/api/contract/instance/4464f2c3-c868-4c16-a2a9-c87c832f04db/endpoint/mint-nft",
+							"raw": "localhost:9080/api/contract/instance/66e0ccc4-0f5c-4c8b-bd10-4fce898e86fe/endpoint/mint-nft",
 							"host": [
 								"localhost"
 							],
@@ -62,9 +62,43 @@
 								"api",
 								"contract",
 								"instance",
-								"4464f2c3-c868-4c16-a2a9-c87c832f04db",
+								"66e0ccc4-0f5c-4c8b-bd10-4fce898e86fe",
 								"endpoint",
 								"mint-nft"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Mint NFT status",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"unTokenName\":\"A\"\n}\n"
+						},
+						"url": {
+							"raw": "localhost:9080/api/contract/instance/66e0ccc4-0f5c-4c8b-bd10-4fce898e86fe/status",
+							"host": [
+								"localhost"
+							],
+							"port": "9080",
+							"path": [
+								"api",
+								"contract",
+								"instance",
+								"66e0ccc4-0f5c-4c8b-bd10-4fce898e86fe",
+								"status"
 							]
 						}
 					},
@@ -121,7 +155,7 @@
 							"raw": "{\n\t\"sCurrency\": {\"unCurrencySymbol\": \"b2c19a5d4ffd9de9a0f7d32f8947e9f3c1e3ec931da1147eb34ad04f\"}, \n\t\"sToken\":{\"unTokenName\":\"A\"}\n}\n"
 						},
 						"url": {
-							"raw": "localhost:9080/api/contract/instance/3f04d41d-d86a-4138-9d82-2948ebd731d3/endpoint/start",
+							"raw": "localhost:9080/api/contract/instance/c70190ad-ef52-401d-8cdb-705f6cb52ad4/endpoint/start",
 							"host": [
 								"localhost"
 							],
@@ -130,7 +164,7 @@
 								"api",
 								"contract",
 								"instance",
-								"3f04d41d-d86a-4138-9d82-2948ebd731d3",
+								"c70190ad-ef52-401d-8cdb-705f6cb52ad4",
 								"endpoint",
 								"start"
 							]
@@ -208,8 +242,11 @@
 				},
 				{
 					"name": "Find PKH",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
 					"request": {
-						"method": "POST",
+						"method": "GET",
 						"header": [
 							{
 								"key": "Content-Type",
@@ -221,7 +258,7 @@
 							"raw": "[]"
 						},
 						"url": {
-							"raw": "localhost:9080/api/contract/instance/2f42a95b-b32a-4167-a255-ef18be1cad8d/endpoint/find-pkh",
+							"raw": "localhost:9080/api/contract/instance/0f01e608-fc9c-41ff-bcfb-32061ec77170/endpoint/find-pkh",
 							"host": [
 								"localhost"
 							],
@@ -230,7 +267,7 @@
 								"api",
 								"contract",
 								"instance",
-								"2f42a95b-b32a-4167-a255-ef18be1cad8d",
+								"0f01e608-fc9c-41ff-bcfb-32061ec77170",
 								"endpoint",
 								"find-pkh"
 							]
@@ -256,7 +293,7 @@
 							"raw": "[]"
 						},
 						"url": {
-							"raw": "localhost:9080/api/contract/instance/2f42a95b-b32a-4167-a255-ef18be1cad8d/endpoint/status",
+							"raw": "localhost:9080/api/contract/instance/0f01e608-fc9c-41ff-bcfb-32061ec77170/status",
 							"host": [
 								"localhost"
 							],
@@ -265,8 +302,7 @@
 								"api",
 								"contract",
 								"instance",
-								"2f42a95b-b32a-4167-a255-ef18be1cad8d",
-								"endpoint",
+								"0f01e608-fc9c-41ff-bcfb-32061ec77170",
 								"status"
 							]
 						}

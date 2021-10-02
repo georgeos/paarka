@@ -18,6 +18,7 @@ module Paarka.NFT (
 
 import           Control.Monad          hiding (fmap)
 import qualified Data.Map               as Map
+import           Data.Monoid            (Last (..))
 import           Data.Text              (Text)
 import           Data.Void              (Void)
 import           Ledger                 hiding (mint, singleton)
@@ -67,21 +68,23 @@ curSymbol oref tn = scriptCurrencySymbol $ policy oref tn
 
 type NFTSchema = Endpoint "mint-nft" TokenName
 
-mintNFT :: TokenName -> Contract w NFTSchema Text ()
+mintNFT :: TokenName -> Contract (Last (CurrencySymbol, TokenName)) NFTSchema Text ()
 mintNFT tn = do
     pk    <- Contract.ownPubKey
     utxos <- utxosAt (pubKeyAddress pk)
     case Map.keys utxos of
         []       -> Contract.logError @String "no utxo found"
         oref : _ -> do
-            let val     = Value.singleton (curSymbol oref tn) tn 1
-                lookups = Constraints.mintingPolicy (policy oref tn) <> Constraints.unspentOutputs utxos
-                tx      = Constraints.mustMintValue val <> Constraints.mustSpendPubKeyOutput oref
+            let myCurSymbol = curSymbol oref tn
+                val         = Value.singleton myCurSymbol tn 1
+                lookups     = Constraints.mintingPolicy (policy oref tn) <> Constraints.unspentOutputs utxos
+                tx          = Constraints.mustMintValue val <> Constraints.mustSpendPubKeyOutput oref
             ledgerTx <- submitTxConstraintsWith @Void lookups tx
             void $ awaitTxConfirmed $ txId ledgerTx
             Contract.logInfo @String $ printf "forged %s" (show val)
+            tell $ Last $ Just (myCurSymbol, tn)
 
-nftEndpoint :: Contract () NFTSchema Text ()
+nftEndpoint :: Contract (Last (CurrencySymbol, TokenName)) NFTSchema Text ()
 nftEndpoint = forever
      $ handleError logError
      $ awaitPromise mint'
