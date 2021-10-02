@@ -8,6 +8,7 @@ const fs = require('fs')
 const util = require('util')
 const unlinkFile = util.promisify(fs.unlink)
 const authRoute = require('./routes/auth');
+const mintRoute = require('./routes/mint')
 const restrictedRoute = require('./routes/restricted')
 const mongoose = require('mongoose')
 const app = express()
@@ -45,6 +46,7 @@ mongoose.connect( process.env.DB_CONNECT , {useNewUrlParser : true} ,
   () => console.log( 'connected to DB!'));
 
 app.use('/api/user', authRoute );
+app.use('/api/mint', mintRoute );
 app.use('/api', restrictedRoute);
 
 app.listen(port, () => {
