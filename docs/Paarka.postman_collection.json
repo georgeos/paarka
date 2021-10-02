@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "96ca8321-e12e-4932-aee6-ae8547a4c488",
+		"_postman_id": "2a71a375-7936-4fee-8b00-69bce86a6ef4",
 		"name": "Paarka",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -233,6 +233,41 @@
 								"2f42a95b-b32a-4167-a255-ef18be1cad8d",
 								"endpoint",
 								"find-pkh"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find PKH status",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[]"
+						},
+						"url": {
+							"raw": "localhost:9080/api/contract/instance/2f42a95b-b32a-4167-a255-ef18be1cad8d/endpoint/status",
+							"host": [
+								"localhost"
+							],
+							"port": "9080",
+							"path": [
+								"api",
+								"contract",
+								"instance",
+								"2f42a95b-b32a-4167-a255-ef18be1cad8d",
+								"endpoint",
+								"status"
 							]
 						}
 					},
