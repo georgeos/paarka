@@ -29,8 +29,9 @@ import           Plutus.PAB.Simulator                (SimulatorEffectHandlers)
 import qualified Plutus.PAB.Simulator                as Simulator
 import qualified Plutus.PAB.Webserver.Server         as PAB.Server
 import           Schema                              (FormSchema)
-import qualified Paarka.Paarka                       as Paarka
-import qualified Paarka.NFT                          as NFT
+
+import qualified Paarka.OffChain                     as Paarka
+import qualified NFT.OffChain                        as NFT
 
 main :: IO ()
 main = void $ Simulator.runSimulationWith handlers $ do
