@@ -140,7 +140,7 @@ data BuyParams = BuyParams {
     ,buyerPKH :: !PubKeyHash
 } deriving (Show, Generic, FromJSON, ToJSON, ToSchema, Prelude.Eq, Prelude.Ord)
 
-startSale :: forall w s. SaleParams -> Contract w s Text ()
+startSale :: forall w s. SaleParams -> Contract w s Text Sale
 startSale sp = do
     pkh   <- pubKeyHash <$> Contract.ownPubKey
     let v = Value.singleton (sCurrency sp) (sToken sp) 1
@@ -152,7 +152,8 @@ startSale sp = do
             }
     ledgerTx <- submitTxConstraints (typedValidator sale) tx
     void $ awaitTxConfirmed $ txId ledgerTx
-    logInfo @String $ printf "sale started for token %s" (show $ sToken sp)
+    logInfo @String $ printf "sale started for token %s" (show sale)
+    return sale
 
 findSale :: Sale -> Contract w s Text (Maybe (TxOutRef, ChainIndexTxOut))
 findSale sale = do
@@ -193,10 +194,12 @@ buy sale amount buyer = do
 -- | StartSale
 type StartSaleSchema = Endpoint "start" SaleParams
 
-startSaleEndpoint :: Contract (Last SaleParams) StartSaleSchema Text ()
+-- | We should find the way to return Sale, coming from StartSale Contract
+-- There is an example in Swap.hs from lesson 6 -> swap Contract -> funds Contract but doesn't work here
+startSaleEndpoint :: Contract (Last Sale) StartSaleSchema Text ()
 startSaleEndpoint = forever
               $ handleError logError
-              $ awaitPromise start'
+              $ awaitPromise start' >>= tell . Last . Just
     where
         start' = endpoint @"start" $ \sp -> startSale sp
 

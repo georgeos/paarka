@@ -11,4 +11,4 @@
 
 ## PAB
 
-1. ```cabal run paarka-pab```
+1. ```cabal run paarka-pab --enable-executable-dynamic```
