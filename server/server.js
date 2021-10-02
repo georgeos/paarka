@@ -9,6 +9,7 @@ const util = require('util')
 const unlinkFile = util.promisify(fs.unlink)
 const authRoute = require('./routes/auth');
 const mintRoute = require('./routes/mint')
+const startSaleRoute = require('./routes/startSale')
 const restrictedRoute = require('./routes/restricted')
 const mongoose = require('mongoose')
 const app = express()
@@ -25,14 +26,14 @@ const port = 3001
 
 
 app.post('/images', upload.single('image')  ,  async (req, res) => {
-  console.log(`this is the ${req.file}`)  
+  console.log(`this is the ${req.file}`)
   const file  = req.file
-  const description = req.body.description  
+  const description = req.body.description
   console.log("hey")
   const result = await uploadFile(file)
   console.log(result)
   await unlinkFile(file.path)
-  res.send(result.Key ) 
+  res.send(result.Key )
 } )
 
 app.get('/images/:key' ,   (req,res ) => {
@@ -47,6 +48,7 @@ mongoose.connect( process.env.DB_CONNECT , {useNewUrlParser : true} ,
 
 app.use('/api/user', authRoute );
 app.use('/api/mint', mintRoute );
+app.use('/api/sale', startSaleRoute );
 app.use('/api', restrictedRoute);
 
 app.listen(port, () => {
