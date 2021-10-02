@@ -10,6 +10,7 @@ const unlinkFile = util.promisify(fs.unlink)
 const authRoute = require('./routes/auth');
 const mintRoute = require('./routes/mint')
 const startSaleRoute = require('./routes/startSale')
+const buyRoute = require('./routes/buy')
 const restrictedRoute = require('./routes/restricted')
 const mongoose = require('mongoose')
 const app = express()
@@ -49,6 +50,7 @@ mongoose.connect( process.env.DB_CONNECT , {useNewUrlParser : true} ,
 app.use('/api/user', authRoute );
 app.use('/api/mint', mintRoute );
 app.use('/api/sale', startSaleRoute );
+app.use('/api/buy', buyRoute );
 app.use('/api', restrictedRoute);
 
 app.listen(port, () => {

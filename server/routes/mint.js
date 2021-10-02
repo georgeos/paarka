@@ -1,7 +1,7 @@
 const router = require("express").Router();
 const axios = require('axios');
 
-router.get("/mint-nft", async (req, res) => {
+router.post("/mint-nft", async (req, res) => {
     // Call to activate contract
     axios({
         method: 'post',
