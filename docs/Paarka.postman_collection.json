@@ -88,7 +88,7 @@
 							"raw": "{\n\t\"unTokenName\":\"A\"\n}\n"
 						},
 						"url": {
-							"raw": "localhost:9080/api/contract/instance/66e0ccc4-0f5c-4c8b-bd10-4fce898e86fe/status",
+							"raw": "localhost:9080/api/contract/instance/cc8c6685-80b8-4fce-88a1-1af26d289ed4/status",
 							"host": [
 								"localhost"
 							],
@@ -97,7 +97,7 @@
 								"api",
 								"contract",
 								"instance",
-								"66e0ccc4-0f5c-4c8b-bd10-4fce898e86fe",
+								"cc8c6685-80b8-4fce-88a1-1af26d289ed4",
 								"status"
 							]
 						}
@@ -242,11 +242,8 @@
 				},
 				{
 					"name": "Find PKH",
-					"protocolProfileBehavior": {
-						"disableBodyPruning": true
-					},
 					"request": {
-						"method": "GET",
+						"method": "POST",
 						"header": [
 							{
 								"key": "Content-Type",
@@ -258,7 +255,7 @@
 							"raw": "[]"
 						},
 						"url": {
-							"raw": "localhost:9080/api/contract/instance/0f01e608-fc9c-41ff-bcfb-32061ec77170/endpoint/find-pkh",
+							"raw": "localhost:9080/api/contract/instance/f07fd08a-3f47-4df1-ac2e-9c16e2aef048/endpoint/find-pkh",
 							"host": [
 								"localhost"
 							],
@@ -267,7 +264,7 @@
 								"api",
 								"contract",
 								"instance",
-								"0f01e608-fc9c-41ff-bcfb-32061ec77170",
+								"f07fd08a-3f47-4df1-ac2e-9c16e2aef048",
 								"endpoint",
 								"find-pkh"
 							]
@@ -293,7 +290,7 @@
 							"raw": "[]"
 						},
 						"url": {
-							"raw": "localhost:9080/api/contract/instance/0f01e608-fc9c-41ff-bcfb-32061ec77170/status",
+							"raw": "localhost:9080/api/contract/instance/f07fd08a-3f47-4df1-ac2e-9c16e2aef048/status",
 							"host": [
 								"localhost"
 							],
@@ -302,7 +299,7 @@
 								"api",
 								"contract",
 								"instance",
-								"0f01e608-fc9c-41ff-bcfb-32061ec77170",
+								"f07fd08a-3f47-4df1-ac2e-9c16e2aef048",
 								"status"
 							]
 						}

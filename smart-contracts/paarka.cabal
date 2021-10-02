@@ -10,11 +10,18 @@ extra-source-files: CHANGELOG.md
 
 library
     hs-source-dirs:      src
-    exposed-modules:   Paarka.Paarka
+    exposed-modules:   Paarka
                      , Paarka.PaarkaCoin
                      , Paarka.AccessToken
                      , Paarka.Utils
-                     , Paarka.NFT
+                     , Paarka.OffChain
+                     , Paarka.OnChain
+                     , Paarka.Trace
+                     , Paarka.Types
+                     , NFT
+                     , NFT.OffChain
+                     , NFT.OnChain
+                     , NFT.Trace
     build-depends:     aeson
                      , base ^>=4.14.1.0
                      , containers
