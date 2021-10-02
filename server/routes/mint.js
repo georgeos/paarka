@@ -22,19 +22,26 @@ router.get("/mint-nft", async (req, res) => {
                 "unTokenName":"A"
             }            
         })
-        .then(_response => {
+        .then(async _response => {
             console.log('minted')
             // If successful call to mint-nft/status
             url = 'http://localhost:9080/api/contract/instance/' + contractInstance + '/status'
-            axios(url)
-            .then(status => {
-                // Still not working, call to status doesn't return observableState, maybe it's too fast to make the call
-                console.log(status.data)
-                return res.send(status.data)
-            })
-            .catch(error => {
-                return res.send(error)
-            })
+            setTimeout(
+                function () {
+                    axios(url)
+                    .then(status => {
+                        console.log(status.data.cicCurrentState.observableState);
+                        response = {
+                            unCurrencySymbol: status.data.cicCurrentState.observableState[0].unCurrencySymbol,
+                            unTokenName: status.data.cicCurrentState.observableState[1].unTokenName
+                        }
+                        return res.send(response);
+                    })
+                    .catch(error => {
+                        return res.send(error);
+                    })
+                }
+            , 2000);
         })
         .catch(error => {
             return res.send(error)
