@@ -68,9 +68,6 @@ getPaarkaContractsSchema = \case
 getPaarkaContracts :: PaarkaContracts -> SomeBuiltin
 getPaarkaContracts = \case
     MintNFT   -> SomeBuiltin $ NFT.nftEndpoint
-    -- | In some way this endpoint should return the Sale in the HTTP request
-    -- Using this returned Sale, we can use the buyEndpoints easily
-    -- Check notes in startSaleEndpoint
     StartSale -> SomeBuiltin $ Paarka.startSaleEndpoint
     Buy       -> SomeBuiltin $ Paarka.buyEndpoints
 

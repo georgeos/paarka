@@ -1,11 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
--- | A decentralized exchange for arbitrary token pairs following the
--- [Uniswap protocol](https://uniswap.org/whitepaper.pdf).
+-- | A decentralized platform for media
+-- [Paarka]
 --
 -- Details:
 --
 --  - 'OffChain' contains the instance endpoints and client functionality
 --  - 'OnChain' contains the validation logic
+--  - 'Types' contains the common types for OnChain and OffChain
+--  - 'Trace' contains the tests
+
 module Paarka
   ( module OnChain
   , module OffChain

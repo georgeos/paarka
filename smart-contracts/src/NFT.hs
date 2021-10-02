@@ -1,11 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
--- | A decentralized exchange for arbitrary token pairs following the
--- [Uniswap protocol](https://uniswap.org/whitepaper.pdf).
+-- | Easy way to mint NFT for any type of media
+-- [Paarka NFT]
 --
 -- Details:
 --
 --  - 'OffChain' contains the instance endpoints and client functionality
 --  - 'OnChain' contains the validation logic
+--  - 'Trace' contains the tests
+
 module NFT
   ( module OnChain
   , module OffChain
