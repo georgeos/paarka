@@ -33,7 +33,12 @@ const userSchema = new mongoose.Schema({
     accessTokens: [{
         id: String,
         txId: String // buying transaction reference
-    }]
+    }],
+
+    walletId: {
+        type: Number,
+        default: null
+    }
 });
 
 module.exports = mongoose.model('User', userSchema);
