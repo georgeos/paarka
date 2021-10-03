@@ -43,8 +43,11 @@ app.get('/images/:key' ,   (req,res ) => {
   console.log(readStream)
   readStream.pipe(res)
 })
-mongoose.connect( process.env.DB_CONNECT , {useNewUrlParser : true} ,
-  () => console.log( 'connected to DB!'));
+mongoose.connect(process.env.DB_CONNECT , {useNewUrlParser : true} ,
+  () => {
+    console.log( 'connected to DB!')
+    console.log(mongoose.connection.readyState);
+});
 
 app.use('/api/user', authRoute );
 app.use('/api/mint', mintRoute );

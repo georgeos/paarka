@@ -7,8 +7,6 @@ const dotenv = require("dotenv");
 const jwt = require("jsonwebtoken")
 dotenv.config();
 
-const secret = process.env.TOKEN_SECRET;
-
 router.post("/register", async (req, res) => {
   //VALIDATION OF THE DATA
   const registerValidation =  validations.register(req);
@@ -41,7 +39,7 @@ router.post("/login", async (req, res) => {
   if (loginValidation.error) {
     return res.status(400).send(loginValidation.error.details);
   } // IF GRAMMAR IS OK THEN  VALIDATE DE PASSWORD
- 
+
   const user = await User.findOne({ email: req.body.email });
   if (user) {
       const match = await bcrypt.compare(
@@ -49,14 +47,14 @@ router.post("/login", async (req, res) => {
         user.password
       );
       if (!match) {
-        return res.status(400).send("invalid password");        
+        return res.status(400).send("invalid password");
       }
     else if (match) {const token = jwt.sign({_id: user._id }, process.env.TOKEN_SECRET);
     res.header('auth-token', token)
     return res.status(200).send(token)}
-    
+
     } else return res.status(400).send("Wrong User or Password" );
-  
+
 });
 
 module.exports = router;

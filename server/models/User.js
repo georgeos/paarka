@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema({
         max:1024,
         min:6
     },
-    
+
     date:{
         type:Date,
         default: Date.now
@@ -28,7 +28,12 @@ const userSchema = new mongoose.Schema({
     adress:{
         type:String,
         default: ""
-    }
+    },
+
+    accessTokens: [{
+        id: String,
+        txId: String // buying transaction reference
+    }]
 });
 
 module.exports = mongoose.model('User', userSchema);
