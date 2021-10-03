@@ -20,7 +20,7 @@ router.post("/mint-nft", async (req, res) => {
             method: 'post',
             url: 'http://localhost:9080/api/contract/instance/' + contractInstance + '/endpoint/mint-nft',
             data: {
-                "unTokenName":"A"
+                "unTokenName":req.body.name
             }            
         })
         .then(async _response => {

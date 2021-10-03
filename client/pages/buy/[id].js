@@ -21,7 +21,7 @@ const Buy = () => {
 }
   const buyMovie = async event => {
     event.preventDefault();
-    await axios.post('localhost:3001/api/buy', buyingParams )
+    await axios.post('http://localhost:3001/api/buy', buyingParams )
   } 
 
   return (

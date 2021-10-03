@@ -3,9 +3,6 @@ import { create as ipfsHttpClient } from 'ipfs-http-client'
 import { useRouter } from 'next/router'
 import axios from 'axios'
 
-
-
-
 export default function CreateItem() {
   const [fileUrl, setFileUrl] = useState(null)
   const [formInput, updateFormInput] = useState({ price: '', name: '', description: '' })
@@ -21,7 +18,6 @@ export default function CreateItem() {
     setvideoUrl(result.data)
     return result.data
   }
-  
 
   const fileSelected = event => {
     const file = event.target.files[0]
@@ -71,7 +67,14 @@ export default function CreateItem() {
     }  
   }
 
- 
+const mintNFT = async event => {
+  let nft = {
+    price: formInput.price,
+    name: formInput.name
+  }
+  await axios.post('http://localhost:3001/api/mint/mint-nft', nft)
+}
+
 
 return (
     <div className="flex justify-center">
@@ -81,11 +84,11 @@ return (
           className="mt-8 border rounded p-4"
           onChange={e => updateFormInput({ ...formInput, name: e.target.value })}
         />
-        <textarea
+        {/* <textarea
           placeholder="Asset Description"
           className="mt-2 border rounded p-4"
           onChange={e => updateFormInput({ ...formInput, description: e.target.value })}
-        />
+        /> */}
         <input
           placeholder="Asset Price in Ada"
           className="mt-2 border rounded p-4"
@@ -124,7 +127,7 @@ return (
 
 
 
-        <button onClick={() => createNFT()} className="font-bold mt-4 bg-blue-600 hover:bg-blue-700 text-white rounded p-4 shadow-lg">
+        <button onClick={mintNFT} className="font-bold mt-4 bg-blue-600 hover:bg-blue-700 text-white rounded p-4 shadow-lg">
           Create digital asset
         </button>
 
