@@ -16,12 +16,22 @@ const Buy = () => {
   const { id } = router.query;
   const movie = movies.filter(movie => movie.id == id)[0];
   const buyingParams = {
-    "unCurrencySymbol": "bde647055ea3261cd03f4b6a5647201e61bc87f96378062e9e45f8fe",
+    "unCurrencySymbol": "4a17cbe402ee58bdc93c9ff07b363a2b0dcdb5880035ad8b1cdd6961",
     "unTokenName": "A"
 }
   const buyMovie = async event => {
     event.preventDefault();
-    await axios.post('http://localhost:3001/api/buy', buyingParams )
+    try {
+      const accessToken = window.localStorage.getItem('auth-token') 
+      await axios.post('http://localhost:3001/api/buy', buyingParams , {
+        headers: {
+          'auth-token':accessToken
+        }
+      })
+      router.push('/')
+    } catch (error){
+      console.log(error)
+    }
   } 
 
   return (

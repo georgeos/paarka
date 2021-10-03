@@ -80,6 +80,7 @@ router.post("/login", async (req, res) => {
 router.post("/edit", async (req, res) => {
   const user = await User.findOne({ email: req.body.email });
   user.walletId = req.body.wallet;
+  user.adress = req.body.adress;
   await user.save();
   console.log(user);
   return res.send("Updated user data");

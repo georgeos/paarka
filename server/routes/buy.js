@@ -1,7 +1,14 @@
 const router = require("express").Router();
 const axios = require('axios');
+const User = require("../models/User");
+const jwt = require( "jwt-decode")
 
 router.post("/", async (req, res) => {
+    const token = req.header('auth-token');
+    const account = jwt(token)
+    const userId = account._id
+    const userData = await User.findById (userId)        
+    console.log(userData)
     // Call to activate contract
     axios({
         method: 'post',
@@ -21,7 +28,7 @@ router.post("/", async (req, res) => {
             data: {
                 "nftSale": {
                     "ownerPkh": {
-                        "getPubKeyHash": "7f8a76c0ebaa4ad20dfdcd51a5de070ab771f4bf377f2c41e6b71c0a"
+                        "getPubKeyHash": "977efb35ab621d39dbeb7274ec7795a34708ff4d25a01a1df04c1f27"
                     },
                     "currency": {
                         "unCurrencySymbol": req.body.unCurrencySymbol
@@ -32,7 +39,7 @@ router.post("/", async (req, res) => {
                 },
                 "amt": 10,
                 "buyerPkh": { 
-                    "getPubKeyHash": "bcc083ade3fdd0a372cb6c43ef00ef02fcb52e9532941117d7609d6a"
+                    "getPubKeyHash": userData.adress
                 }
             }                    
         })
