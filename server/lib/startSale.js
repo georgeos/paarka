@@ -1,12 +1,12 @@
 const axios = require('axios');
 
-function startSale (data, res) {
+function startSale (user, data, res) {
     axios({
         method: 'post',
         url: 'http://localhost:9080/api/contract/activate/',
         data: {
             caID: "StartSale",
-            caWallet: { getWallet: 3 }
+            caWallet: { getWallet: user.walletId }
         }
     })
     .then(response => {

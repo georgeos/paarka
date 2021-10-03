@@ -1,14 +1,14 @@
 const router = require("express").Router();
 const { restart } = require("nodemon");
 const User = require("../models/User");
-const Wallet = require("../models/Wallet");
+// const Wallet = require("../models/Wallet");
 const validations = require("./validations");
 const bcrypt = require("bcrypt");
 const dotenv = require("dotenv");
 const jwt = require("jsonwebtoken")
 dotenv.config();
 
-let getWalletid = function(useremail) {
+let getWalletid = async function(useremail) {
   u = await User.findOne({email: useremail});
   if (u.walletId != null) {
     return u.walletId;
@@ -40,13 +40,13 @@ router.post("/register", async (req, res) => {
   const salt = await bcrypt.genSalt(10);
   const hashPassword = await bcrypt.hash(req.body.password, salt);
 
-  wid = await getWalletid(req.body.email);
+  // wid = await getWalletid(req.body.email);
 
   const user = new User({
     userName: req.body.userName,
     email: req.body.email,
     password: hashPassword,
-    walletId: wid
+    walletId: req.body.walletId
   });
   const savedUser = await user.save();
   return res.send("You register was succesfull");
@@ -78,28 +78,10 @@ router.post("/login", async (req, res) => {
 });
 
 router.post("/edit", async (req, res) => {
-  //VALIDATION OF GRAMMAR THE DATA
-  const loginValidation = validations.login(req);
-  // DEPENDING OF THE RESULT OF THE GRAMAR VALIDATION WE DECIDE IF WE LOOK UP IN DB
-  if (loginValidation.error) {
-    return res.status(400).send(loginValidation.error.details);
-  } // IF GRAMMAR IS OK THEN  VALIDATE DE PASSWORD
-
   const user = await User.findOne({ email: req.body.email });
-  if (user) {
-    return res.status(400).send("Wrong User or Password");
-  }
-  const match = await bcrypt.compare(
-    req.body.password,
-    user.password
-  );
-  if (!match) {
-    return res.status(400).send("Wrong User or Password");
-  }
-
-  user.walletId = await getWalletid(user.email);
+  user.walletId = req.body.wallet;
   await user.save();
-
+  console.log(user);
   return res.send("Updated user data");
 });
 

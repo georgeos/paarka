@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { create as ipfsHttpClient } from 'ipfs-http-client'
-import { useRouter } from 'next/router'
 import axios from 'axios'
+import { useRouter } from 'next/router'
 
 export default function CreateItem() {
+
+  const router = useRouter()
   const [fileUrl, setFileUrl] = useState(null)
   const [formInput, updateFormInput] = useState({ price: '', name: '', description: '' })
   const [file, setFile] = useState()
@@ -12,7 +14,6 @@ export default function CreateItem() {
   async function postImage({image}) {
     const formData = new FormData();
     formData.append("image", image)
-  
     const result = await axios.post('http://localhost:3001/images', formData, { headers: {'Content-Type': 'multipart/form-data'}})
     console.log(result.data)
     setvideoUrl(result.data)
@@ -22,18 +23,14 @@ export default function CreateItem() {
   const fileSelected = event => {
     const file = event.target.files[0]
 		setFile(file)
-    	}
-   const submit = async event => {
-      event.preventDefault()
-      const result = await postImage({image: file})
-      }
-      
+  }
 
+  const submit = async event => {
+    event.preventDefault()
+    await postImage({image: file})
+  }
 
-  const router = useRouter()
   const client = ipfsHttpClient('https://ipfs.infura.io:5001/api/v0')
-
- 
 
   async function onChange(e) {
     const file = e.target.files[0]
@@ -61,22 +58,33 @@ export default function CreateItem() {
     try {
       const added = await client.add(data)
       const url = `https://ipfs.infura.io/ipfs/${added.path}` 
-      console.log("Here we  create the  NFT!! " , url)          
+      // await mintNFT();
+      console.log(data, videoUrl);
+      console.log("Here we  create the  NFT!! " , url)
     } catch (error) {
       console.log('Error uploading file: ', error)
     }  
   }
 
-const mintNFT = async event => {
-  let nft = {
-    price: formInput.price,
-    name: formInput.name
+  const mintNFT = async () => {
+    try {
+      const accessToken = window.localStorage.getItem('auth-token') 
+      let nft = {
+        price: formInput.price,
+        name: formInput.name
+      }
+      await axios.post('http://localhost:3001/api/mint/mint-nft', nft, {
+        headers: {
+          'auth-token':accessToken
+        }
+      })
+      router.push('/')
+    } catch (error){
+      console.log(error)
+    }
   }
-  await axios.post('http://localhost:3001/api/mint/mint-nft', nft)
-}
 
-
-return (
+  return (
     <div className="flex justify-center">
       <div className="w-1/2 flex flex-col pb-12">
         <input 
@@ -100,48 +108,26 @@ return (
           className="my-4"
           onChange={onChange}
         />
-               
-
-               {
-          fileUrl && (
-            <img className="rounded mt-4" width="350" src={fileUrl} />
-          )
-        }
-
-{<div>  
-    <form onSubmit={submit}>
-        <input onChange={fileSelected} type="file" accept="video/*"></input>
-        <button className={"bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"} type="submit">Submit Video</button>
-      </form>
+        {fileUrl && (<img className="rounded mt-4" width="350" src={fileUrl} />)}
+        {<div>  
+          <form onSubmit={submit}>
+            <input onChange={fileSelected} type="file" accept="video/*"></input>
+            <button className={"bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"} type="submit">Upload video</button>
+          </form>
         </div>}
-
-{ videoUrl && (
-       <div >
-       <header>
-       <video controls muted>
-           <source src={  `http://localhost:3001/images/${videoUrl}`} type="video/mp4"></source>
-       </video>
-       </header>
-   </div>)
-}
-
-
-
+        { videoUrl && (
+          <div >
+            <header>
+            <video controls muted>
+                <source src={  `http://localhost:3001/images/${videoUrl}`} type="video/mp4"></source>
+            </video>
+            </header>
+          </div>
+        )}
         <button onClick={mintNFT} className="font-bold mt-4 bg-blue-600 hover:bg-blue-700 text-white rounded p-4 shadow-lg">
-          Create digital asset
+          Mint NFT
         </button>
-
-
-
-
-
       </div>
     </div>
-
-    
-
-    
-  )
-
-  
+  ) 
 }

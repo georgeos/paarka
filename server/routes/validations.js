@@ -12,6 +12,8 @@ const registerSchema= Joi.object({
     password: Joi.string()
     .min(6)
     .max(200)
+    .required(),
+    walletId: Joi.number()
     .required()
 });
 const loginSchema = Joi.object({
