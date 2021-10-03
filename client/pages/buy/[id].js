@@ -1,10 +1,13 @@
 import { StarIcon } from '@heroicons/react/solid'
+import axios from 'axios';
 import { useRouter } from 'next/router'
 import movies from '../movies.json';
 
 const reviews = { href: '#', average: 4, totalCount: 117 }
 
+
 function classNames(...classes) {
+
   return classes.filter(Boolean).join(' ')
 }
 
@@ -12,6 +15,14 @@ const Buy = () => {
   const router = useRouter();
   const { id } = router.query;
   const movie = movies.filter(movie => movie.id == id)[0];
+  const buyingParams = {
+    "unCurrencySymbol": "bde647055ea3261cd03f4b6a5647201e61bc87f96378062e9e45f8fe",
+    "unTokenName": "A"
+}
+  const buyMovie = async event => {
+    event.preventDefault();
+    await axios.post('localhost:3001/api/buy', buyingParams )
+  } 
 
   return (
     <div className="bg-white">
@@ -120,7 +131,7 @@ const Buy = () => {
                     </div>
                   </div>
                 </div>
-              <button
+              <button onClick={buyMovie}
                 type="submit"
                 className="mt-2 w-full bg-blue-600 border border-transparent rounded-md py-3 px-8 flex items-center justify-center text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >

@@ -39,7 +39,6 @@ router.post("/login", async (req, res) => {
   const loginValidation = validations.login(req);
   // DEPENDING OF THE RESULT OF THE GRAMAR VALIDATION WE DECIDE IF WE LOOK UP IN DB
   if (loginValidation.error) {
-    console.log(req.body);
     return res.status(400).send(loginValidation.error.details);
   } // IF GRAMMAR IS OK THEN  VALIDATE DE PASSWORD
  
