@@ -20,7 +20,7 @@ module Paarka.OnChain (
     paarkaAddress
 ) where
 
-import           Paarka.Utils           (paarkaPkh, Sale(..))
+import           Paarka.Utils           (paarkaPkh, SaleParams(..), BuyParams(..))
 import           Ledger                 hiding (mint, singleton)
 import qualified Ledger.Typed.Scripts   as Scripts
 import           Ledger.Value           as Value
@@ -39,8 +39,8 @@ import           Paarka.Types
 -- Close:
 -- - Owner has NFT in output
 {-# INLINABLE paarkaValidator #-}
-paarkaValidator :: CurrencySymbol -> CurrencySymbol -> Sale -> PubKeyHash -> () -> PaarkaRedeemer -> ScriptContext -> Bool
-paarkaValidator paarka accessToken sale pkhPaarka _ r ctx = traceIfFalse "Not signed by Paarka" checkSignature &&
+paarkaValidator :: CurrencySymbol -> CurrencySymbol -> SaleParams -> PubKeyHash -> () -> PaarkaRedeemer -> ScriptContext -> Bool
+paarkaValidator paarka accessToken sp pkhPaarka _ r ctx = traceIfFalse "Not signed by Paarka" checkSignature &&
     case r of
         Buy buyer ->
             traceIfFalse "token missing from input"                 (hasNFT ownInput) &&
@@ -66,10 +66,10 @@ paarkaValidator paarka accessToken sale pkhPaarka _ r ctx = traceIfFalse "Not si
             _   -> traceError "missing one sale output"
 
         hasNFT :: TxOut -> Bool
-        hasNFT txOut = assetClassValueOf (txOutValue txOut ) (assetClass (currency sale) (token sale)) == 1
+        hasNFT txOut = assetClassValueOf (txOutValue txOut ) (assetClass (currency sp) (token sp)) == 1
 
         accessTokenToBuyer :: PubKeyHash -> Bool
-        accessTokenToBuyer buyer = assetClassValueOf (valuePaidTo info buyer) (assetClass accessToken (token sale)) == 1
+        accessTokenToBuyer buyer = assetClassValueOf (valuePaidTo info buyer) (assetClass accessToken (token sp)) == 1
 
         paarkaSpent :: Integer
         paarkaSpent = assetClassValueOf (valueSpent info) (assetClass paarka (TokenName "PaarkaCoin"))
@@ -77,23 +77,23 @@ paarkaValidator paarka accessToken sale pkhPaarka _ r ctx = traceIfFalse "Not si
         paarkaProduced :: Integer
         paarkaProduced = assetClassValueOf (valueProduced info) (assetClass paarka (TokenName "PaarkaCoin"))
 
-typedValidator :: Sale -> Scripts.TypedValidator Paarka
-typedValidator sale = Scripts.mkTypedValidator @Paarka
+typedValidator :: SaleParams -> Scripts.TypedValidator Paarka
+typedValidator sp = Scripts.mkTypedValidator @Paarka
         ($$(PlutusTx.compile [|| paarkaValidator ||])
             `PlutusTx.applyCode` PlutusTx.liftCode paarkaSymbol
-            `PlutusTx.applyCode` PlutusTx.liftCode (nftTokenSymbol sale)
-            `PlutusTx.applyCode` PlutusTx.liftCode sale
+            `PlutusTx.applyCode` PlutusTx.liftCode (nftTokenSymbol sp)
+            `PlutusTx.applyCode` PlutusTx.liftCode sp
             `PlutusTx.applyCode` PlutusTx.liftCode paarkaPkh
         )
         $$(PlutusTx.compile [|| wrap ||])
     where
         wrap = Scripts.wrapValidator @() @PaarkaRedeemer
 
-validator :: Sale -> Validator
+validator :: SaleParams -> Validator
 validator = Scripts.validatorScript . typedValidator
 
-valHash :: Sale -> Ledger.ValidatorHash
+valHash :: SaleParams -> Ledger.ValidatorHash
 valHash = Scripts.validatorHash . typedValidator
 
-paarkaAddress :: Sale -> Ledger.Address
+paarkaAddress :: SaleParams -> Ledger.Address
 paarkaAddress = scriptAddress . validator

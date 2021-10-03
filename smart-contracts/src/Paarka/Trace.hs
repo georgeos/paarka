@@ -28,8 +28,8 @@ import           PlutusTx.Prelude       hiding (Semigroup(..), unless)
 import           Wallet.Emulator.Wallet
 import           Prelude                (Semigroup (..), (<>), IO)
 
-import           Paarka.Utils           (Sale(..))
-import           Paarka.OffChain        (startSaleEndpoint, buyEndpoints, SaleParams(..), BuyParams(..))
+import           Paarka.Utils           (SaleParams(..), BuyParams(..))
+import           Paarka.OffChain        (startSaleEndpoint, buyEndpoints)
 
 -- | Trace
 
@@ -65,12 +65,13 @@ tracePaarka = do
     let saleOwner = pubKeyHash $ walletPubKey $ Wallet 2
         buyer3 = pubKeyHash $ walletPubKey $ Wallet 3
         buyer4 = pubKeyHash $ walletPubKey $ Wallet 4
-    callEndpoint @"start" h2 SaleParams{sCurrency=csNFT, sToken=tnNFT}
+        sp = SaleParams{ownerPkh=[saleOwner], share=[100], currency=csNFT, token=tnNFT}
+    callEndpoint @"start" h2 sp
     void $ Emulator.waitNSlots 2
     h1 <- activateContractWallet (Wallet 1) $ buyEndpoints
-    callEndpoint @"buy" h1  BuyParams{ nftSale=Sale{ currency=csNFT, token=tnNFT, ownerPkh=saleOwner }, amt=10, buyerPkh=buyer3}
+    callEndpoint @"buy" h1  BuyParams{ nftSale=sp, amt=10, buyerPkh=buyer3}
     void $ Emulator.waitNSlots 1
-    callEndpoint @"buy" h1  BuyParams{ nftSale=Sale{ currency=csNFT, token=tnNFT, ownerPkh=saleOwner }, amt=10, buyerPkh=buyer4}
+    callEndpoint @"buy" h1  BuyParams{ nftSale=sp, amt=10, buyerPkh=buyer4}
     void $ Emulator.waitNSlots 1
 
 runPaarka :: IO ()

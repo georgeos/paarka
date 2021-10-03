@@ -8,7 +8,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Paarka.Utils (
-    Sale(..),
+    SaleParams(..), BuyParams(..),
     paarkaPkh
 ) where
 
@@ -17,17 +17,26 @@ import           GHC.Generics           (Generic)
 import           Ledger                 (PubKeyHash)
 import           Ledger.Value           as Value
 import qualified PlutusTx
-import           Prelude                (Show (..))
+import           Prelude                (Show (..), Integer)
 import qualified Prelude
 import           Schema                 (ToSchema)
 
-data Sale = Sale
-    { ownerPkh     :: !PubKeyHash
+data SaleParams = SaleParams
+    { ownerPkh  :: ![PubKeyHash]
+    , share     :: ![Integer]
     , currency  :: !CurrencySymbol
     , token     :: !TokenName
     } deriving (Show, Generic, FromJSON, ToJSON, ToSchema, Prelude.Eq, Prelude.Ord)
 
-PlutusTx.makeLift ''Sale
+PlutusTx.makeLift ''SaleParams
+
+data BuyParams = BuyParams {
+     nftSale  :: !SaleParams
+    ,amt      :: !Integer
+    ,buyerPkh :: !PubKeyHash
+} deriving (Show, Generic, FromJSON, ToJSON, ToSchema, Prelude.Eq, Prelude.Ord)
+
+PlutusTx.makeLift ''BuyParams
 
 paarkaPkh :: PubKeyHash
 paarkaPkh = "35dedd2982a03cf39e7dce03c839994ffdec2ec6b04f1cf2d40e61a3" :: PubKeyHash
