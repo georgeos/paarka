@@ -1,12 +1,6 @@
 import { useState } from 'react'
 import axios from 'axios'
-import MuiAlert from "@material-ui/lab/Alert";
 
-function Alert(props) {
-
-  return <MuiAlert elevation={6} variant="filled" {...props} />;
-
-}
 
 
 export default function Example() {
@@ -20,8 +14,8 @@ export default function Example() {
     const { email , password } = formInput
     if (!email || !password ) return    
     await  axios.post('http://localhost:3001/api/user/login' , formInput  )
-  .then((response) => {
-    console.log(response)})
+  .then((response) => {      
+    window.localStorage.setItem('auth-token', response.data) })
   .catch(function (error) {
     if (error.response) {
       updateLoginError(true)

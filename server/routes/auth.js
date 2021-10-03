@@ -54,9 +54,9 @@ router.post("/login", async (req, res) => {
       }
     else if (match) {const token = jwt.sign({_id: user._id }, process.env.TOKEN_SECRET);
     res.header('auth-token', token)
-    return res.status(200).send('you are logged in!')}
+    return res.status(200).send(token)}
     
-    } else return res.status(400).send("Wrong User or Password");
+    } else return res.status(400).send("Wrong User or Password" );
   
 });
 
