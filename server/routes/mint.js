@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const axios = require('axios');
+const startSale = require('../lib/startSale')
 
 router.post("/mint-nft", async (req, res) => {
     // Call to activate contract
@@ -35,7 +36,7 @@ router.post("/mint-nft", async (req, res) => {
                             unCurrencySymbol: status.data.cicCurrentState.observableState[0].unCurrencySymbol,
                             unTokenName: status.data.cicCurrentState.observableState[1].unTokenName
                         }
-                        return res.send(response);
+                        return startSale.startSale(response, res)
                     })
                     .catch(error => {
                         return res.send(error);

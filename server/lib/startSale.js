@@ -1,8 +1,6 @@
-const router = require("express").Router();
 const axios = require('axios');
 
-router.post("/start-sale", async (req, res) => {
-    // Call to activate contract
+function startSale (data, res) {
     axios({
         method: 'post',
         url: 'http://localhost:9080/api/contract/activate/',
@@ -20,10 +18,10 @@ router.post("/start-sale", async (req, res) => {
             url: 'http://localhost:9080/api/contract/instance/' + contractInstance + '/endpoint/start',
             data: {
                 "sCurrency": {
-                    "unCurrencySymbol": req.body.unCurrencySymbol
+                    "unCurrencySymbol": data.unCurrencySymbol
                 },
                 "sToken": {
-                    "unTokenName": req.body.unTokenName
+                    "unTokenName": data.unTokenName
                 }
             }
         })
@@ -51,6 +49,6 @@ router.post("/start-sale", async (req, res) => {
     .catch(error => {
         return res.send(error)
     });
-});
+}
 
-module.exports = router;
+module.exports = { startSale };
