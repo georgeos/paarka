@@ -1,11 +1,16 @@
 import { useState } from 'react'
 import axios from 'axios'
-
-
+import { useRouter } from 'next/router'
 
 export default function Example() {
-
-
+  
+  const router = useRouter()
+  if (typeof window !== 'undefined') {
+    const accessToken = window.localStorage.getItem('auth-token')
+    if(accessToken) {
+      router.push('/')
+    }
+  }
   const [formInput, updateFormInput] = useState({  email: '', password: '' })
   const [logginError,updateLoginError] = useState(false)
 
@@ -15,7 +20,10 @@ export default function Example() {
     if (!email || !password ) return    
     await  axios.post('http://localhost:3001/api/user/login' , formInput  )
   .then((response) => {      
-    window.localStorage.setItem('auth-token', response.data) })
+    window.localStorage.setItem('auth-token', response.data) 
+    router.push('/')
+    router.reload()
+  })
   .catch(function (error) {
     if (error.response) {
       updateLoginError(true)

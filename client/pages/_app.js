@@ -2,12 +2,29 @@
 import '../styles/globals.css'
 import { Popover } from '@headlessui/react'
 
-const navigation = [
-  { name: 'Home', href: '/' },
-  { name: 'Movies', href: '/#movies' },
-  { name: 'Sell', href: '/create-item' },
-  { name: 'My movies', href: '/my-assets' },
-]
+function loadMenu() {
+  const menuNotLogged = [
+    { name: 'Home', href: '/' },
+    { name: 'Movies', href: '/#movies' },
+    { name: 'Login', href: '/login' }
+  ]
+  if (typeof window !== 'undefined') {
+    const accessToken = window.localStorage.getItem('auth-token')
+    if(accessToken) {
+      return [
+        { name: 'Home', href: '/' },
+        { name: 'Movies', href: '/#movies' },
+        { name: 'My movies', href: '/my-assets' },
+        { name: 'Sell', href: '/create-item' },
+      ]
+    } else {
+      return menuNotLogged
+    }
+  } else {
+    return menuNotLogged
+  }
+}
+const navigation = loadMenu()
 
 function MyApp({ Component, pageProps }) {
   return (
@@ -31,9 +48,6 @@ function MyApp({ Component, pageProps }) {
                   {item.name}
                 </a>
               ))}
-              <a href="login" className="font-medium text-blue-600 hover:text-blue-500">
-                Log in
-              </a>
             </div>
           </nav>
         </div>
