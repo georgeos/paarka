@@ -62,16 +62,21 @@ emCfg = EmulatorConfig (Left $ Map.fromList [( Wallet w,
 tracePaarka :: EmulatorTrace ()
 tracePaarka = do
     h2 <- activateContractWallet (Wallet 2) startSaleEndpoint
-    let saleOwner = pubKeyHash $ walletPubKey $ Wallet 2
+    let saleOwner1 = pubKeyHash $ walletPubKey $ Wallet 2
+        saleOwner2 = pubKeyHash $ walletPubKey $ Wallet 6
+        saleOwner3 = pubKeyHash $ walletPubKey $ Wallet 7
         buyer3 = pubKeyHash $ walletPubKey $ Wallet 3
         buyer4 = pubKeyHash $ walletPubKey $ Wallet 4
-        sp = SaleParams{ownerPkh=[saleOwner], share=[100], currency=csNFT, token=tnNFT}
+        buyer5 = pubKeyHash $ walletPubKey $ Wallet 5
+        sp = SaleParams{ownerPkh=[saleOwner1, saleOwner2, saleOwner3], share=[65, 25, 10], currency=csNFT, token=tnNFT}
     callEndpoint @"start" h2 sp
     void $ Emulator.waitNSlots 2
     h1 <- activateContractWallet (Wallet 1) $ buyEndpoints
     callEndpoint @"buy" h1  BuyParams{ nftSale=sp, amt=10, buyerPkh=buyer3}
     void $ Emulator.waitNSlots 1
     callEndpoint @"buy" h1  BuyParams{ nftSale=sp, amt=10, buyerPkh=buyer4}
+    void $ Emulator.waitNSlots 1
+    callEndpoint @"buy" h1  BuyParams{ nftSale=sp, amt=10, buyerPkh=buyer5}
     void $ Emulator.waitNSlots 1
 
 runPaarka :: IO ()

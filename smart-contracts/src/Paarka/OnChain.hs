@@ -20,7 +20,7 @@ module Paarka.OnChain (
     paarkaAddress
 ) where
 
-import           Paarka.Utils           (paarkaPkh, SaleParams(..), BuyParams(..))
+import           Paarka.Utils           (paarkaPkh, SaleParams(..))
 import           Ledger                 hiding (mint, singleton)
 import qualified Ledger.Typed.Scripts   as Scripts
 import           Ledger.Value           as Value

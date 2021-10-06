@@ -20,23 +20,17 @@ module Paarka.OffChain (
 ) where
 
 import           Control.Monad          hiding (fmap)
-import           Data.Aeson             (FromJSON, ToJSON)
 import qualified Data.Map               as Map
 import           Data.Monoid            (Last (..))
 import           Data.Text              (Text)
-import           GHC.Generics           (Generic)
 import           Ledger                 hiding (mint, singleton)
 import           Ledger.Constraints     as Constraints
 import           Ledger.Value           as Value
 import           Plutus.Contract        as Contract
 import qualified PlutusTx
 import           PlutusTx.Prelude       hiding (Semigroup(..), unless)
-import           Schema                 (ToSchema)
-
 import           Text.Printf            (printf)
 import           Prelude                (Semigroup (..), Show (..), String, (<>))
-import qualified Prelude
-
 import           Paarka.Utils           (SaleParams(..), BuyParams(..))
 import           Paarka.PaarkaCoin      (paarkaSymbol, paarkaPolicy)
 import           Paarka.AccessToken     (nftTokenSymbol, nftTokenPolicy)
@@ -47,7 +41,6 @@ import           Paarka.Types           (Paarka, PaarkaRedeemer(..))
 
 startSale :: forall w s. SaleParams -> Contract w s Text SaleParams
 startSale sp = do
-    pkh   <- pubKeyHash <$> Contract.ownPubKey
     let v = Value.singleton (currency sp) (token sp) 1
         tx = mustPayToTheScript () v
     ledgerTx <- submitTxConstraints (OnChain.typedValidator sp) tx
@@ -78,22 +71,24 @@ buy sp amount buyer = do
         Nothing      -> Contract.logInfo @String $ printf "sale not found"
         Just(oref, o)-> do
             let tn = "PaarkaCoin"
-                paarka  = Value.singleton paarkaSymbol tn amount
-                owner : _ = (ownerPkh sp)
+                lengthOwner = length (ownerPkh sp) - 1
+                paarka a prct = Value.singleton paarkaSymbol tn (a * 10_000 * prct )
+                -- owner : _ = (ownerPkh sp)
                 val     = Value.singleton (nftTokenSymbol sp) (token sp) 1
                 lookups = Constraints.unspentOutputs (Map.singleton oref o) <>
                           Constraints.otherScript (OnChain.validator sp) <>
                           Constraints.mintingPolicy paarkaPolicy <>
                           Constraints.mintingPolicy (nftTokenPolicy sp)
-                tx      = Constraints.mustMintValue paarka <>
-                          Constraints.mustPayToPubKey owner paarka <>
+                tx      =
+                          mconcat [ Constraints.mustPayToPubKey (ownerPkh sp !! i) (paarka amount (share sp !! i)) | i <- [0..lengthOwner] ] <>
+                          Constraints.mustMintValue (paarka amount 100) <>
                           Constraints.mustMintValue val <>
                           Constraints.mustPayToPubKey buyer val <>
                           Constraints.mustSpendScriptOutput oref (Redeemer $ PlutusTx.toBuiltinData $ Buy buyer) <>
                           Constraints.mustPayToOtherScript (OnChain.valHash sp) (Datum $ PlutusTx.toBuiltinData ()) (txOutValue $ toTxOut o)
             ledgerTx <- submitTxConstraintsWith @Paarka lookups tx
             awaitTxConfirmed $ txId ledgerTx
-            Contract.logInfo @String $ printf "minted %s tokens" (show paarka)
+            Contract.logInfo @String $ printf "minted %s tokens" (show (paarka amount 100))
             logInfo @String $ printf "purchase done %s with amount" (show sp)
 
 -- | Endpoints
