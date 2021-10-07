@@ -28,6 +28,7 @@ library
                      , data-default
                      , freer-extras
                      , playground-common
+                     , plutus-chain-index
                      , plutus-contract
                      , plutus-ledger
                      , plutus-ledger-api

@@ -16,7 +16,7 @@ module Paarka.Types where
 
 import           Ledger                 hiding (mint, singleton)
 import qualified Ledger.Typed.Scripts   as Scripts
-import           Prelude                (Show (..))
+import           Prelude                (Show (..), Integer)
 import qualified PlutusTx
 
 -- | Onchain code
@@ -30,5 +30,5 @@ PlutusTx.unstableMakeIsData ''PaarkaRedeemer
 
 data Paarka
 instance Scripts.ValidatorTypes Paarka where
-    type instance DatumType Paarka = ()
+    type instance DatumType Paarka = Integer
     type instance RedeemerType Paarka = PaarkaRedeemer

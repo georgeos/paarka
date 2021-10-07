@@ -68,15 +68,15 @@ tracePaarka = do
         buyer3 = pubKeyHash $ walletPubKey $ Wallet 3
         buyer4 = pubKeyHash $ walletPubKey $ Wallet 4
         buyer5 = pubKeyHash $ walletPubKey $ Wallet 5
-        sp = SaleParams{ownerPkh=[saleOwner1, saleOwner2, saleOwner3], share=[65, 25, 10], currency=csNFT, token=tnNFT}
+        sp = SaleParams{ownerPkh=[saleOwner1, saleOwner2, saleOwner3], share=[65, 25, 10], currency=csNFT, token=tnNFT, price=10}
     callEndpoint @"start" h2 sp
     void $ Emulator.waitNSlots 2
-    h1 <- activateContractWallet (Wallet 1) $ buyEndpoints
-    callEndpoint @"buy" h1  BuyParams{ nftSale=sp, amt=10, buyerPkh=buyer3}
+    h1 <- activateContractWallet (Wallet 1) buyEndpoints
+    callEndpoint @"buy" h1  BuyParams{ nftSale=sp, buyerPkh=buyer3}
     void $ Emulator.waitNSlots 1
-    callEndpoint @"buy" h1  BuyParams{ nftSale=sp, amt=10, buyerPkh=buyer4}
+    callEndpoint @"buy" h1  BuyParams{ nftSale=sp, buyerPkh=buyer4}
     void $ Emulator.waitNSlots 1
-    callEndpoint @"buy" h1  BuyParams{ nftSale=sp, amt=10, buyerPkh=buyer5}
+    callEndpoint @"buy" h1  BuyParams{ nftSale=sp, buyerPkh=buyer5}
     void $ Emulator.waitNSlots 1
 
 runPaarka :: IO ()

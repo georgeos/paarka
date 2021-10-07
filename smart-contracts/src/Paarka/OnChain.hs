@@ -20,7 +20,7 @@ module Paarka.OnChain (
     paarkaAddress
 ) where
 
-import           Paarka.Utils           (paarkaPkh, SaleParams(..))
+import           Paarka.Utils           (paarkaPkh, salePrice, SaleParams(..))
 import           Ledger                 hiding (mint, singleton)
 import qualified Ledger.Typed.Scripts   as Scripts
 import           Ledger.Value           as Value
@@ -39,14 +39,15 @@ import           Paarka.Types
 -- Close:
 -- - Owner has NFT in output
 {-# INLINABLE paarkaValidator #-}
-paarkaValidator :: CurrencySymbol -> CurrencySymbol -> SaleParams -> PubKeyHash -> () -> PaarkaRedeemer -> ScriptContext -> Bool
-paarkaValidator paarka accessToken sp pkhPaarka _ r ctx = traceIfFalse "Not signed by Paarka" checkSignature &&
+paarkaValidator :: CurrencySymbol -> CurrencySymbol -> PubKeyHash -> SaleParams -> Integer -> PaarkaRedeemer -> ScriptContext -> Bool
+paarkaValidator paarka accessToken pkhPaarka sp p r ctx = traceIfFalse "Not signed by Paarka" checkSignature &&
     case r of
         Buy buyer ->
             traceIfFalse "token missing from input"                 (hasNFT ownInput) &&
             traceIfFalse "token missing from output"                (hasNFT ownOutput) &&
             traceIfFalse "access token missing from buyer"          (accessTokenToBuyer buyer) &&
-            traceIfFalse "access token missing from buyer"          (paarkaSpent < paarkaProduced)
+            traceIfFalse "access token missing from buyer"          (paarkaSpent < paarkaProduced) &&
+            traceIfFalse "price value changed"                      (outputDatum == Just p)
         SetPrice -> traceIfFalse "Second version" True
     where
         info :: TxInfo
@@ -65,6 +66,9 @@ paarkaValidator paarka accessToken sp pkhPaarka _ r ctx = traceIfFalse "Not sign
             [o] -> o
             _   -> traceError "missing one sale output"
 
+        outputDatum :: Maybe Integer
+        outputDatum = salePrice ownOutput (`findDatum` info)
+
         hasNFT :: TxOut -> Bool
         hasNFT txOut = assetClassValueOf (txOutValue txOut ) (assetClass (currency sp) (token sp)) == 1
 
@@ -82,12 +86,12 @@ typedValidator sp = Scripts.mkTypedValidator @Paarka
         ($$(PlutusTx.compile [|| paarkaValidator ||])
             `PlutusTx.applyCode` PlutusTx.liftCode paarkaSymbol
             `PlutusTx.applyCode` PlutusTx.liftCode (nftTokenSymbol sp)
-            `PlutusTx.applyCode` PlutusTx.liftCode sp
             `PlutusTx.applyCode` PlutusTx.liftCode paarkaPkh
+            `PlutusTx.applyCode` PlutusTx.liftCode sp
         )
         $$(PlutusTx.compile [|| wrap ||])
     where
-        wrap = Scripts.wrapValidator @() @PaarkaRedeemer
+        wrap = Scripts.wrapValidator @Integer @PaarkaRedeemer
 
 validator :: SaleParams -> Validator
 validator = Scripts.validatorScript . typedValidator
