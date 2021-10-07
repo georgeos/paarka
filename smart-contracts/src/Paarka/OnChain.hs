@@ -46,7 +46,7 @@ paarkaValidator paarka accessToken pkhPaarka sp p r ctx = traceIfFalse "Not sign
             traceIfFalse "token missing from input"                 (hasNFT ownInput) &&
             traceIfFalse "token missing from output"                (hasNFT ownOutput) &&
             traceIfFalse "access token missing from buyer"          (accessTokenToBuyer buyer) &&
-            traceIfFalse "access token missing from buyer"          (paarkaSpent < paarkaProduced) &&
+            traceIfFalse "price not reflected on paarka"            (paarkaSpent + (p * 1_000_000) == paarkaProduced) &&
             traceIfFalse "price value changed"                      (outputDatum == Just p)
         SetPrice -> traceIfFalse "Second version" True
     where
