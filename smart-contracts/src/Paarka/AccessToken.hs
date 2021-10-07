@@ -15,7 +15,7 @@ module Paarka.AccessToken (
     nftTokenPolicy,
 ) where
 
-import           Paarka.Utils           (paarkaPkh, Sale(..))
+import           Paarka.Utils           (paarkaPkh, SaleParams(..))
 import           Control.Monad          hiding (fmap)
 import           Data.Text              (Text)
 import           Data.Void              (Void)
@@ -34,12 +34,12 @@ import           Text.Printf            (printf)
 -- | Minting policy
 
 {-# INLINABLE mintPolicy #-}
-mintPolicy :: Sale -> PubKeyHash -> () -> ScriptContext -> Bool
-mintPolicy sale pkhOwner _ ctx =
+mintPolicy :: SaleParams -> PubKeyHash -> () -> ScriptContext -> Bool
+mintPolicy sp pkhOwner _ ctx =
     case mintedValue of
         (cs, tn, amount)    ->
             traceIfFalse "Wrong currency symbol"         (cs == ownCurrencySymbol ctx) &&
-            traceIfFalse "Wrong token name"              (tn == token sale) &&
+            traceIfFalse "Wrong token name"              (tn == token sp) &&
             traceIfFalse "Wrong number of tokens minted" (amount == 1) &&
             traceIfFalse "Not signed by Paarka" checkSignature
     where
@@ -52,27 +52,27 @@ mintPolicy sale pkhOwner _ ctx =
         checkSignature :: Bool
         checkSignature = txSignedBy info pkhOwner
 
-nftTokenPolicy :: Sale -> Scripts.MintingPolicy
-nftTokenPolicy sale = mkMintingPolicyScript $
-    $$(PlutusTx.compile [|| \sale' paarkaPkh' -> Scripts.wrapMintingPolicy $ mintPolicy sale' paarkaPkh' ||])
-    `PlutusTx.applyCode` PlutusTx.liftCode sale
+nftTokenPolicy :: SaleParams -> Scripts.MintingPolicy
+nftTokenPolicy sp = mkMintingPolicyScript $
+    $$(PlutusTx.compile [|| \sp' paarkaPkh' -> Scripts.wrapMintingPolicy $ mintPolicy sp' paarkaPkh' ||])
+    `PlutusTx.applyCode` PlutusTx.liftCode sp
     `PlutusTx.applyCode` PlutusTx.liftCode paarkaPkh
 
-nftTokenSymbol :: Sale -> CurrencySymbol
+nftTokenSymbol :: SaleParams -> CurrencySymbol
 nftTokenSymbol = scriptCurrencySymbol . nftTokenPolicy
 
 -- | Offchain code
 -- Testing purposes
-type MintAccessTokenSchema = Endpoint "mint" Sale
+type MintAccessTokenSchema = Endpoint "mint" SaleParams
 
-mint :: Sale   -> Contract w MintAccessTokenSchema Text ()
-mint sale = do
-    let val     = Value.singleton (nftTokenSymbol sale) (token sale) 1
-        lookups = Constraints.mintingPolicy (nftTokenPolicy sale)
+mint :: SaleParams   -> Contract w MintAccessTokenSchema Text ()
+mint sp = do
+    let val     = Value.singleton (nftTokenSymbol sp) (token sp) 1
+        lookups = Constraints.mintingPolicy (nftTokenPolicy sp)
         tx      = Constraints.mustMintValue val
     ledgerTx <- submitTxConstraintsWith @Void lookups tx
     void $ awaitTxConfirmed $ txId ledgerTx
-    Contract.logInfo @String $ printf "minted 1 %s" (show sale)
+    Contract.logInfo @String $ printf "minted 1 %s" (show sp)
 
 endpoints :: Contract () MintAccessTokenSchema Text ()
 endpoints = forever
